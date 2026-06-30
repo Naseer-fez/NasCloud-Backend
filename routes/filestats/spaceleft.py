@@ -1,42 +1,33 @@
 from flask import Blueprint,jsonify
 from utils.Storage import get_storage
-from utils.acceptjson import getjson
-
+from utils.updatespace import totalspaceused
 spacebp=Blueprint("spacebp",__name__)
 
 Fileoperation=get_storage()
-@spacebp.route("/spaceleft/<int:userid>/",methods=["GET"])
+@spacebp.route("/userstats/<int:userid>/",methods=["GET"])
 def Home(userid):
-    usedspace=totalspaceused(userid)
+    usedspace=getuserusage(userid)
     if usedspace==-1:
         return jsonify({"return":"The user do not exist"}),400
-    return jsonify({"retutn":int(usedspace)}),200
+    return jsonify({"return":int(usedspace)}),200
     
 
 
-def getsize(node):
-    # File
-    if node["type"] != "Folder":
-        return node["size"]
+def getuserusage(userid):
+    PATH=Fileoperation.getfilepath(userid=userid)
+    PATH=(PATH.parent/"stats.json")
+    if not Fileoperation.pathexist(PATH):
+        return totalspaceused(userid)
+    else:
+        Data=Fileoperation.jsonread(userid=userid,path=PATH)
 
-    # Folder
-    total = 0
-    for child in node["children"]:
-        total += getsize(child)
-    return total
+        return Data
+
+        
+    #check if the file exist or not 
 
 
-def totalspaceused(userid):
-    try:
-        DIR = Fileoperation.jsonread(userid=userid)
-    except FileNotFoundError as e:
-        return -1
-    total = 0
 
-    for root in DIR:
-        total += getsize(root)
-
-    return total
     
     
 

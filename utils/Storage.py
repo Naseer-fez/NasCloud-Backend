@@ -16,7 +16,7 @@ class LocalStorage:
             basedir=basedir/userid
             return basedir
         if filename is None: #For json file
-            basedir=self.userdetails
+            basedir=self.userdetails/str(userid)
             return basedir/f"{userid}.json"
         basedir=self.source/str(userid)/filename
 
@@ -24,7 +24,10 @@ class LocalStorage:
 
     
     def __openfile(self,userid,filename,filemode,Folderuse=1):
-        filepath=self.getfilepath(filename=filename,userid=str(userid))
+        if Folderuse ==0:
+            filepath=filename
+        else:
+            filepath=self.getfilepath(filename=filename,userid=str(userid))
         output= open(filepath,mode=filemode) 
         return output
     
@@ -40,23 +43,33 @@ class LocalStorage:
             File.write(data)
         return 1
     
-    def readdata(self,filename,Sizeofdata): #cannot be more modular 
-            with open(file=filename,mode="rb") as output:
-                    while True:
-                        chunk=output.read(1024*1024*Sizeofdata)
-                        if not chunk:
-                            break  
-                        yield chunk
+    def readdata(self,filename,Sizeofdata=None): #cannot be more modular 
+            if Sizeofdata is not None:
+                with open(file=filename,mode="rb") as output:
+                        while True:
+                            chunk=output.read(1024*1024*Sizeofdata)
+                            if not chunk:
+                                break  
+                            yield chunk
+            else:
+                with open(file=filename,mode="r") as output:
+                    return output
 
     
-    def jsonwrite(self,userid,data,fileindent=4):
-        File=self.__openfile(userid,filename=None,filemode="w")
+    def jsonwrite(self,userid,data,fileindent=4,filepath=None):
+        if filepath is None:
+            File=self.__openfile(userid,filename=None,filemode="w")
+        else:
+            File=self.__openfile(userid=userid,filename=filepath,filemode="w",Folderuse=0)
         with File:
             json.dump(data,File,indent=fileindent)
         return 1
     
-    def jsonread(self,userid):
-            File=self.__openfile(userid,filename=None,filemode="r")
+    def jsonread(self,userid,path=None):
+            if path is None:
+                File=self.__openfile(userid,filename=None,filemode="r")
+            else:
+                File=path.open()
             Data={}
             try:
                 with File:
