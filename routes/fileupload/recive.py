@@ -4,18 +4,22 @@ from dotenv import load_dotenv
 from utils.FileHelpers import CreateDir
 from pathlib import Path
 from utils.acceptjson import getjson
+from utils.updatespace import updatespace
 load_dotenv()
 uploadbp=Blueprint('FileUpload',__name__)
 
 
-@uploadbp.route("/uploadfile/<int:Userid>",methods=["GET"]) 
-@getjson
-def home(Userid,data):
-    directory=data.get("directory")
+@uploadbp.route("/uploadfile/<int:Userid>",methods=["POST"]) 
+def home(Userid):
+    directory=request.form.get("directory")
     Stream=request.environ["wsgi.input"]
     Filename=os.getenv("DestinationFolder")
     Recivedfile=str(request.files['filename'].filename)
+    uploadsize = request.content_length
+    if  not updatespace(Userid,uploadsize):
+        return jsonify({"return":"No space left"}),400
     Tosave=CreateDir(Userid=Userid,Directory=directory,Filename=Recivedfile)
+    filesize=0
     if  Tosave==0:
         return jsonify({"return":"Some Error in Creating the Directory"}),401
     with open (file=Path(Tosave),mode="ab") as File:
@@ -24,5 +28,8 @@ def home(Userid,data):
             if not Chunk :
                 break
             File.write(Chunk)
+            filesize += len(Chunk)
+    updatespace(userid=Userid,operation=uploadsize)
     # with open() as File:
     return jsonify({"return":"File Saved in the server"}),200
+

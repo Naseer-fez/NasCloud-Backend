@@ -49,10 +49,19 @@ def jsonoperation(userid,data,path=None):
 
 def updatespace(userid,operation):
     currentspace=totalspaceused(userid)
-    currentspace["usedspace"]=currentspace["size"]+operation
+
+    currentspace["usedspace"]=currentspace["usedspace"]+operation
     currentspace["remaningspace"]=currentspace["remaningspace"]-operation
-    jsonoperation(userid=userid,data=currentspace)
-    return currentspace
+    if currentspace["remaningspace"]>=0:
+        jsonoperation(userid=userid,data=currentspace)
+        return currentspace
+    else: 
+        return [0]
+    
+
+
+    
+    
 
 def availabelforuser(userid):
     GB=1073741824
