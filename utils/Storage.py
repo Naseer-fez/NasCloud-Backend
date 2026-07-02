@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 import json
+import shutil
 load_dotenv()
 
 
@@ -129,8 +130,13 @@ class LocalStorage:
     def deletefile(self,userid,filepath):
         filename=self.getreativepath(userid=userid,filename=filepath)
         filepath=self.getfilepath(userid=userid,filename=filename)
+        print(filepath)
         try:
-            os.remove(filepath)
+            if self.isdirectory(pathobj=filepath):
+                shutil.rmtree(filepath)
+            else:
+                
+                os.remove(filepath)
             return 1
         except Exception as e:
             return 0
