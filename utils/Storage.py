@@ -11,6 +11,8 @@ class LocalStorage:
         self.source=Path(os.getenv("DestinationFolder"))
         self.userdetails=Path(os.getenv("Userfolder"))
         self.trash=str(os.getenv("trash","trash"))
+        self.statsjson=str(os.getenv("stats","stats.json"))
+        self.totalfiles=str(os.getenv("file","files.json"))
     def getfilepath(self,userid,filename=None,folderreq=0):
         if folderreq==1:
             basedir=self.source
@@ -130,7 +132,6 @@ class LocalStorage:
     def deletefile(self,userid,filepath):
         filename=self.getreativepath(userid=userid,filename=filepath)
         filepath=self.getfilepath(userid=userid,filename=filename)
-        print(filepath)
         try:
             if self.isdirectory(pathobj=filepath):
                 shutil.rmtree(filepath)
@@ -209,7 +210,14 @@ class LocalStorage:
             prefix=prefix+1
             tosavepath=tosavepath.with_name(f"{original_stemp}[{prefix}]{original_suffix}")
         return 0
-       
+    def getstatsfile(self,userid):
+            PATH=self.getfilepath(userid=userid)
+            PATH=PATH.parent/self.statsjson
+            return PATH 
+    def getfilesjson(self,userid):
+        filepath=self.getfilepath(userid=userid,filename=None)
+        filepath=filepath.parent/self.totalfiles
+        return   filepath
 def get_storage():
     return LocalStorage()
 

@@ -1,12 +1,12 @@
 from utils.Storage import get_storage
 from utils.FolderStructure import Createfilestructure
-from utils.updatespace import jsonoperation 
+from utils.updatespace import jsonoperation,checkchanges
 Fileoperation=get_storage()
 
 def searchfile(userid,tofind):
     #check if the cache exist 
-    filepath=Fileoperation.getfilepath(userid=userid,filename=None)
-    filepath=filepath.parent/"files.json"          
+    filepath=Fileoperation.getfilesjson(userid) #create a substuite of this
+    checkchanges(userid=userid) #Because i need accurate files so , the createfolder will do that for me 
     try:
         filedata=Fileoperation.jsonread(userid=userid,path=filepath) #measning reading the cache file path
     except FileNotFoundError as e:

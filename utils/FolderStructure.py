@@ -3,9 +3,10 @@
 # import json
 from .Storage import get_storage
 from dotenv import load_dotenv
-load_dotenv()
 import time
+load_dotenv()
 Fileoperation=get_storage()
+
 class FolderStructure:
     def __init__(self,userid:str):
         self.userid=str(userid)
@@ -20,7 +21,7 @@ class FolderStructure:
         statspath=filepath.parent/"files.json" 
         self.Directory=self.FolderTraverse(Foldernames=Fileoperation.Allfiles(folderpath),Folderpath=folderpath)
         Fileoperation.jsonwrite(self.userid,data=self.Directory,fileindent=4)  ##Forfolderstructure
-        print(statspath)
+        # print(statspath)
         Fileoperation.jsonwrite(self.userid,data=self.allfiles,fileindent=4,filepath=statspath)
     def FolderTraverse(self,Foldernames,Folderpath):
             Data=[]
@@ -71,8 +72,24 @@ def Createfilestructure(userid):
 
 
 def updatefilestructure(Userid,Updates,operation):
-    Createfilestructure(Userid)  ##Just for the timebeing
-
+    # Createfilestructure(Userid)  ##Just for the timebeing
+    PATH=Fileoperation.getstatsfile(Userid)
+    try:
+        data=Fileoperation.jsonread(userid=Userid,path=PATH)
+        data["update"]=1
+       
+    except (FileNotFoundError,TypeError,Exception) as e:
+        data = {}
+        Createfilestructure(Userid)
+        data["update"]=0  ##measn file is updated 
+    jsonoperation(userid=Userid,path=PATH,data=data)
+    return 
+        
+#solution for circular import
+def jsonoperation(userid,data,path=None):
+        if path is None:
+            path=Fileoperation.getstatsfile(userid)      
+        Fileoperation.jsonwrite(userid=userid,data=data,filepath=path)
 
 if __name__=="__main__":
     print(Createfilestructure(1))

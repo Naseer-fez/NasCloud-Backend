@@ -32,24 +32,26 @@ def spacecalculator(userid,operation=0):
 
 
 def totalspaceused(userid):
-    PATH=Fileoperation.getfilepath(userid=userid)
-    PATH=PATH.parent/"stats.json"
-    try:
-        DIR = Fileoperation.jsonread(userid=userid,path=PATH)
-        return DIR
-    except (FileNotFoundError,TypeError) as e:
-        space=spacecalculator(userid=userid)
-        data={"usedspace":int(space),"remaningspace":int(availabelforuser(userid)-space)}
-        jsonoperation(userid=userid,data=data,path=PATH)
-        return data
-    except Exception as e:
-        print(e)
+    PATH=Fileoperation.getstatsfile(userid)
+    data=checkchanges(userid,path=PATH)
+
+    if data[0]==1:
+        if (data.get("usedspace") is not None) and data.get("usedspace")==0:
+            return data[1]
+        
+    #measn create the stats file first 
+    # if data[0]==0:
+    #     Createfilestructure(userid) # means reorgainse the files tructure
     
+    space=spacecalculator(userid=userid) #recalut for the updation 
+    data={"usedspace":int(space),"remaningspace":int(availabelforuser(userid)-space),
+            "update":0}
+    jsonoperation(userid=userid,data=data,path=PATH)
+    return data
 
 def jsonoperation(userid,data,path=None):
         if path is None:
-            path=Fileoperation.getfilepath(userid=userid)
-            path=path.parent/"stats.json"        
+            path=Fileoperation.getstatsfile(userid)      
         Fileoperation.jsonwrite(userid=userid,data=data,filepath=path)
 
 
@@ -65,7 +67,24 @@ def updatespace(userid,operation):
         return [0]
     
 
-
+def checkchanges(userid,path=None):
+    if path is None:
+        path=Fileoperation.getstatsfile(userid)
+    try:
+        data=Fileoperation.jsonread(userid=userid,path=path)
+        value=data.get("update")
+        if (value is None) or (value==1):
+            Createfilestructure(userid) #forsearch
+            data["update"]=0 #means a new file 
+            jsonoperation(userid=userid,path=path,data=data)
+            return [0,data]
+        else :
+            return [1,data]
+    except  (FileNotFoundError,TypeError) as e: #measn that the file is not created yet
+        Createfilestructure(userid)
+        return [-1]
+    
+        
     
     
 
