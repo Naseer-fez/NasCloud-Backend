@@ -9,7 +9,7 @@ from routes.fileupload.recive import uploadbp
 from routes.filedownload.download import downloadbp
 from routes.filestructure.structure import structurebp
 #File operations
-from routes.fileoperations.deletefile import deletefilebp
+from routes.filedeletion.deletefile import deletefilebp
 from routes.fileoperations.updatefile import updatefilebp
 from routes.fileoperations.createdir import createbp
 from routes.fileoperations.postionchnage import postionbp
@@ -35,4 +35,5 @@ app=Createapp()
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0",debug=True)
+

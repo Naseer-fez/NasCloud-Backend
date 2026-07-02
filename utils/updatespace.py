@@ -1,5 +1,6 @@
 from .Storage import get_storage
 from dotenv import load_dotenv
+from utils.FolderStructure import Createfilestructure
 import os
 load_dotenv()
 Fileoperation=get_storage()
@@ -16,8 +17,12 @@ def getsize(node):
     return total
 
 def spacecalculator(userid,operation=0):
-
-    DIR=Fileoperation.jsonread(userid=userid)
+    try:
+        DIR=Fileoperation.jsonread(userid=userid)
+    except FileNotFoundError as e:
+        Createfilestructure(userid=userid)
+        DIR=Fileoperation.jsonread(userid=userid)
+    
     total = 0
 
     for root in DIR:
@@ -37,6 +42,8 @@ def totalspaceused(userid):
         data={"usedspace":int(space),"remaningspace":int(availabelforuser(userid)-space)}
         jsonoperation(userid=userid,data=data,path=PATH)
         return data
+    except Exception as e:
+        print(e)
     
 
 def jsonoperation(userid,data,path=None):

@@ -10,9 +10,9 @@ uploadbp=Blueprint('FileUpload',__name__)
 
 
 @uploadbp.route("/uploadfile/<int:Userid>",methods=["POST"]) 
+
 def home(Userid):
     directory=request.form.get("directory")
-    print(directory)
     Stream=request.environ["wsgi.input"]
     Filename=os.getenv("DestinationFolder")
     if 'filepath' not in request.files:
@@ -20,14 +20,17 @@ def home(Userid):
     Recivedfile=str(request.files['filepath'].filename)
     uploadsize = request.content_length
     if  not updatespace(Userid,+uploadsize):
-        return jsonify({"return":"No space left"}),400
-    Tosave=CreateDir(Userid=Userid,Directory=directory,Filename=Recivedfile)
+        return jsonify({"return":"No space left \n Try Clearning Trash"}),400
+    tosavepath=CreateDir(Userid=Userid,Directory=directory,Filename=Recivedfile)
     filesize=0
-    if  Tosave==0:
-        print("HEHEHEHEH")
+    if  tosavepath==0:
         return jsonify({"return":"Some Error in Creating the Directory"}),401
     uploaded_file = request.files["filepath"]
-    with open (file=Path(Tosave),mode="ab") as File:
+    tosavepath=Path(tosavepath)
+    tosavepath=filecheck(tosavepath)
+    if tosavepath==0:
+        return jsonify({"Too Many files already exist try a diffrentname"}),401
+    with open (file=Path(tosavepath),mode="ab") as File:
 
         while True:
             Chunk=uploaded_file.stream.read((1024*1024)*int(os.getenv("size"), 16)) #16MB
@@ -36,6 +39,19 @@ def home(Userid):
             File.write(Chunk)
             filesize += len(Chunk)
     updatespace(userid=Userid,operation=uploadsize)
-    # with open() as File:
     return jsonify({"return":"File Saved in the server"}),200
 
+
+
+def filecheck(tosavepath):
+        prefix=1
+        attempt=1000
+        original_stem=tosavepath.stem
+        suffix=tosavepath.suffix
+        while attempt:
+                if not tosavepath.exists():
+                    return tosavepath
+                tosavepath=tosavepath.with_name(f"{original_stem}[{prefix}]{suffix}")
+                prefix+=1
+                attempt-=1
+        return 0  
