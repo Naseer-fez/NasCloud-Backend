@@ -10,13 +10,14 @@ def CreateDir(Userid,Directory,Filename):
             DIR=Fileoperation.joinpath(DIR,Userid)
         else:
             DIR=Fileoperation.joinpath(DIR,[Userid,Directory])
-        Fileoperation.Createfolder(DIR)
-        Filename=Fileoperation.getfilename(Filename)
+        Fileoperation.Createfolder(userid=Userid,filepath=DIR)        
+        Filename=Fileoperation.getfilename(userid=Userid,filepath=Filename)
         return str(Fileoperation.joinpath(DIR,Filename)) #Returnt the paths where the file is supposed to store
     
             
 
     except Exception as e:
+        print(e)
         return 0    
 
 

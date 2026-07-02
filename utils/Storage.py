@@ -47,7 +47,7 @@ class LocalStorage:
             if Sizeofdata is not None:
                 with open(file=filename,mode="rb") as output:
                         while True:
-                            chunk=output.read(1024*1024*Sizeofdata)
+                            chunk=output.read(1024*1024*int(Sizeofdata))
                             if not chunk:
                                 break  
                             yield chunk
@@ -129,9 +129,9 @@ class LocalStorage:
     def deletefile(self,userid,filepath):
         filename=self.getreativepath(userid=userid,filename=filepath)
         filepath=self.getfilepath(userid=userid,filename=filename)
-        file=Path(self.joinpath(filepath,filename))
 
-        os.remove(file)
+
+        os.remove(filepath)
 
     def fileexist(self,userid,filepath):
         filename=self.getreativepath(userid=userid,filename=filepath)
@@ -141,9 +141,8 @@ class LocalStorage:
     def rename(self,userid,filepath,tochange):
         filename=self.getreativepath(userid=userid,filename=filepath) #Get the fileloaction in the savedirectory
         filepath=self.getfilepath(userid=userid,filename=filename) #get the root directory
-        file=Path(self.joinpath(filepath,filename))        # join the path d://user
-        newfilepath=self.joinpath(filepath,tochange) #this ifot the new apth
-        os.rename(file,newfilepath)     #reanem the file
+        newfilepath=self.joinpath(filepath.parent,tochange) #new path using parent dir + new name
+        os.rename(filepath,newfilepath)     #rename the file
         return 1
     
     def locationchnage(self,userid,oldpath,tochange):

@@ -13,7 +13,7 @@ def searchfile(userid,tofind):
         filedata=createfilescache(userid,filepath)
         if filedata==-1:
             return [-1,"User not found"]
-        jsonoperation(userid=userid,filedata=filedata,path=filepath)
+        jsonoperation(userid=userid,data=filedata,path=filepath)
     except Exception as e:
         return [-1,str(e)]
     filedata=filelookup(filename=tofind,source=filedata)

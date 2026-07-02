@@ -17,7 +17,7 @@ class FolderStructure:
         #For folderstructure
         folderpath=Fileoperation.getfilepath(userid=self.userid,folderreq=1) 
         filepath=Fileoperation.getfilepath(userid=self.userid,filename=None)
-        statspath=filepath.parent/"stats.json" 
+        statspath=filepath.parent/"files.json" 
         self.Directory=self.FolderTraverse(Foldernames=Fileoperation.Allfiles(folderpath),Folderpath=folderpath)
         Fileoperation.jsonwrite(self.userid,data=self.Directory,fileindent=4)  ##Forfolderstructure
         print(statspath)

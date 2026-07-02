@@ -16,25 +16,30 @@ Fileoperation=get_storage()
 @downloadbp.route("/downloadfile/<int:userid>/",methods=["GET"]) 
 @getjson
 def Home(userid,data):
-    filepath=data.get("filepath")
-    filepath,filesize,filetype=filedetails(str(userid),filepath)
+    userid=str(userid)
+    filepath=data.get("filename")
+    filepath,filesize,filetype=filedetails((userid),filepath)
     if filepath is None:
-        return jsonify({"retutn":"WrongFile Inputed Tryahain"}),429
+        return jsonify({"retutn":"WrongFile Inputed Tryagain"}),400
     headerdata={"filesize":filesize,"filetype":filetype}
     SIZE=os.getenv("size") or 5
-    value=Fileoperation.readdata(filename=filepath,Sizeofdata=SIZE)
-    return Response(value,mimetype=filetype,headers=headerdata)
+    return Response(Fileoperation.readdata(filename=filepath,Sizeofdata=SIZE),
+                    mimetype=filetype,headers=headerdata)
     
     
     
 
 def filedetails(userid,filepath):
     Source=Fileoperation.source 
-    filepath=Fileoperation.joinpath(Source,[str(userid),filepath])  
+    orginalfile=filepath
+    filepath=Fileoperation.joinpath(Source,[str(userid),filepath])
     if Fileoperation.isdirectory(filepath):
-        return [None]
-    Filesize=Fileoperation.Filesize(filepath)
-    Fileextenstion=Fileoperation.getextenstion()
+        return [None]*3
+    try:
+        Filesize=Fileoperation.Filesize(userid=userid,filepath=orginalfile)
+    except FileNotFoundError as e:
+        return [None]*3
+    Fileextenstion=Fileoperation.getextenstion(filepath=filepath)
     return [filepath,Filesize,Fileextenstion]
 
 

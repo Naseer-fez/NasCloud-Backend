@@ -9,7 +9,7 @@ def Home(userid):
     usedspace=getuserusage(userid)
     if usedspace==-1:
         return jsonify({"return":"The user do not exist"}),400
-    return jsonify({"return":int(usedspace)}),200
+    return jsonify({"return":(usedspace)}),200
     
 
 
@@ -20,7 +20,6 @@ def getuserusage(userid):
         return totalspaceused(userid)
     else:
         Data=Fileoperation.jsonread(userid=userid,path=PATH)
-
         return Data
 
         

@@ -1,7 +1,7 @@
 from .Storage import get_storage
 from dotenv import load_dotenv
 import os
-
+load_dotenv()
 Fileoperation=get_storage()
 
 def getsize(node):
@@ -36,7 +36,7 @@ def totalspaceused(userid):
         space=spacecalculator(userid=userid)
         data={"usedspace":int(space),"remaningspace":int(availabelforuser(userid)-space)}
         jsonoperation(userid=userid,data=data,path=PATH)
-        return space
+        return data
     
 
 def jsonoperation(userid,data,path=None):
@@ -49,7 +49,6 @@ def jsonoperation(userid,data,path=None):
 
 def updatespace(userid,operation):
     currentspace=totalspaceused(userid)
-
     currentspace["usedspace"]=currentspace["usedspace"]+operation
     currentspace["remaningspace"]=currentspace["remaningspace"]-operation
     if currentspace["remaningspace"]>=0:
