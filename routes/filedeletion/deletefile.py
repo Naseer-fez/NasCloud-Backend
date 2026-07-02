@@ -2,6 +2,7 @@ from flask import Blueprint,jsonify
 from utils.Storage import get_storage
 from utils.acceptjson import getjson
 from utils.updatespace import updatespace
+from utils.FolderStructure import updatefilestructure
 deletefilebp=Blueprint("delete",__name__)
 
 Fileoperation=get_storage()
@@ -18,7 +19,8 @@ def Home(userid,data):
         return jsonify({"return":tosend[1]}),400
     if not operation:
         updatespace(userid=userid,operation=-filesize)
-    #The frontend should update the         
+    #The frontend should update the 
+    updatefilestructure(userid=userid,Updates=filename,operation="delete")        
     return jsonify({"return":tosend[1]}),200
     
     

@@ -2,7 +2,7 @@ from flask import Blueprint,jsonify
 from utils.Storage import get_storage
 from utils.acceptjson import getjson
 from utils.updatespace import updatespace
-from utils.FolderStructure import Createfilestructure
+from utils.FolderStructure import updatefilestructure
 trashbp=Blueprint("trash",__name__)
 
 Fileoperation=get_storage()
@@ -14,5 +14,5 @@ def Home(userid,data):
     obj=Fileoperation.deletefile(userid=userid,filepath=filename)
     if not obj:
         return  jsonify({"return":"Some error is removing the trash"})
-    Createfilestructure(userid=userid)
+    updatefilestructure(userid=userid,Updates=filename,operation="delete")
     return jsonify({"return":"removedsuccesully from trash"})

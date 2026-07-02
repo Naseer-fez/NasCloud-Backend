@@ -1,6 +1,7 @@
 from flask import Blueprint,jsonify,request
 from utils.Storage import get_storage
 from utils.acceptjson import getjson
+from utils.FolderStructure import updatefilestructure
 postionbp=Blueprint("postion",__name__)
 
 Fileoperation=get_storage()
@@ -13,6 +14,7 @@ def Home(userid,data):
     statuscode=200
     if tosend[0] ==0:
         statuscode=400
+    updatefilestructure(userid=userid,Updates=[oldpath,newloaction],operation="update")
     return jsonify({"return":tosend[1]}),statuscode
 
 

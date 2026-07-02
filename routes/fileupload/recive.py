@@ -1,10 +1,10 @@
-from flask import Flask,jsonify,request,Blueprint
+from flask import jsonify,request,Blueprint
 import os 
 from dotenv import load_dotenv
 from utils.FileHelpers import CreateDir
 from pathlib import Path
-from utils.acceptjson import getjson
 from utils.updatespace import updatespace
+from utils.FolderStructure import updatefilestructure
 load_dotenv()
 uploadbp=Blueprint('FileUpload',__name__)
 
@@ -39,6 +39,7 @@ def home(Userid):
             File.write(Chunk)
             filesize += len(Chunk)
     updatespace(userid=Userid,operation=uploadsize)
+    updatefilestructure(Userid,Updates=tosavepath,operation="add")
     return jsonify({"return":"File Saved in the server"}),200
 
 

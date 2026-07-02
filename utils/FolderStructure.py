@@ -69,6 +69,10 @@ def Createfilestructure(userid):
         print(e)
         return 0 #User Donot exist
 
- 
+
+def updatefilestructure(Userid,Updates,operation):
+    Createfilestructure(Userid)  ##Just for the timebeing
+
+
 if __name__=="__main__":
     print(Createfilestructure(1))
