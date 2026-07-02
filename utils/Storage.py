@@ -9,7 +9,7 @@ class LocalStorage:
     def __init__ (self):
         self.source=Path(os.getenv("DestinationFolder"))
         self.userdetails=Path(os.getenv("Userfolder"))
-
+        self.trash=str(os.getenv("trash","trash"))
     def getfilepath(self,userid,filename=None,folderreq=0):
         if folderreq==1:
             basedir=self.source
@@ -129,9 +129,12 @@ class LocalStorage:
     def deletefile(self,userid,filepath):
         filename=self.getreativepath(userid=userid,filename=filepath)
         filepath=self.getfilepath(userid=userid,filename=filename)
+        try:
+            os.remove(filepath)
+            return 1
+        except Exception as e:
+            return 0
 
-
-        os.remove(filepath)
 
     def fileexist(self,userid,filepath):
         filename=self.getreativepath(userid=userid,filename=filepath)
@@ -182,11 +185,11 @@ class LocalStorage:
         return {"createdtime":int(stats.st_ctime),"updatedtime":int(stats.st_mtime)}
     def movetotrash(self,userid,filename):
         oldpath=Path(filename)
-        newpath="trash"/oldpath
+        newpath=self.trash/oldpath
         return self.locationchnage(userid=userid,oldpath=oldpath,tochange=newpath)
     def gettheprefix(self,userid,tosavepath):
         tosavepath=Path(tosavepath)
-        tosavepath="trash"/tosavepath
+        tosavepath=self.trash/tosavepath
         attempts=1000
         prefix=0
         original_stemp=tosavepath.stem
