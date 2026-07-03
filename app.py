@@ -16,16 +16,20 @@ from routes.fileoperations.postionchnage import postionbp
 from routes.filestats.spaceleft import spacebp
 from routes.filesearch.searchfile import filesearch 
 from routes.fileoperations.removetrash import trashbp
+from routes.publicacces.accesspublic import publicbp
+from routes.publicacces.setpublic import setpublicbp
 from utils.auth import enableauth
+import secrets
 load_dotenv()
 def Createapp():
     app = Flask(__name__)
-
+    app.config["secret"] = os.getenv("secret")
     CORS(app=app)    
     enableauth(app)
     #Register Blueprints
     routes=[uploadbp,downloadbp,structurebp,deletefilebp,
-            updatefilebp,createbp,postionbp,spacebp,filesearch,trashbp]
+            updatefilebp,createbp,postionbp,spacebp,filesearch,trashbp,
+            setpublicbp,publicbp]
     for blueprint in routes:
         app.register_blueprint(blueprint)
     
