@@ -7,11 +7,11 @@ from dotenv import load_dotenv
 from pathlib import Path
 from utils.Storage import get_storage
 from utils.acceptjson import getjson
-
+from utils.FileHelpers import filedetails
 downloadbp=Blueprint('Downloadbp',__name__)
 # downloadbp=Flask(__name__)
 Fileoperation=get_storage()
-
+load_dotenv()
 # @downloadbp.route("/downloadfile/<int:userid>/",defaults={"folderpath":None,"filepath":None,},methods=["GET"])
 @downloadbp.route("/downloadfile/<int:userid>/",methods=["GET"]) 
 @getjson
@@ -29,18 +29,6 @@ def Home(userid,data):
     
     
 
-def filedetails(userid,filepath):
-    Source=Fileoperation.source 
-    orginalfile=filepath
-    filepath=Fileoperation.joinpath(Source,[str(userid),filepath])
-    if Fileoperation.isdirectory(filepath):
-        return [None]*3
-    try:
-        Filesize=Fileoperation.Filesize(userid=userid,filepath=orginalfile)
-    except FileNotFoundError as e:
-        return [None]*3
-    Fileextenstion=Fileoperation.getextenstion(filepath=filepath)
-    return [filepath,Filesize,Fileextenstion]
 
 
 

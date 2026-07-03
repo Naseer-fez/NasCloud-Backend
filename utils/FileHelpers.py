@@ -21,6 +21,18 @@ def CreateDir(Userid,Directory,Filename):
         return 0    
 
 
+def filedetails(userid,filepath):
+    Source=Fileoperation.source 
+    orginalfile=filepath
+    filepath=Fileoperation.joinpath(Source,[str(userid),filepath])
+    if Fileoperation.isdirectory(filepath):
+        return [None]*3
+    try:
+        Filesize=Fileoperation.Filesize(userid=userid,filepath=orginalfile)
+    except FileNotFoundError as e:
+        return [None]*3
+    Fileextenstion=Fileoperation.getextenstion(filepath=filepath)
+    return [filepath,Filesize,Fileextenstion]
     
 if __name__=="__main__":
     print(CreateDir(Directory=None,Filename=r"Live.mp4",Userid="1"))
