@@ -1,19 +1,53 @@
 from flask import Blueprint,jsonify
 from utils.FolderStructure import Createfilestructure
-from dotenv import load_dotenv
+from utils.FileHelpers import checkchangesinstats
 from utils.Storage import get_storage
 structurebp=Blueprint("structure",__name__)
 
 File=get_storage()
 
-@structurebp.route("/structure/<int:userid>/",methods=["GET"])
-def Home(userid):
-    structure=Createfilestructure(userid=userid)
-    if structure==0:
-        return jsonify({"return":"UserHasnofile","instruction":"createfile"}),500
-    filepath=File.getfilepath(userid=str(userid))
-    filedata=File.jsonread(userid=str(userid))
-    if  filedata==0:
-        return jsonify({"return":"fileopeningerror","instruction":"tryagain"}),500
-    return jsonify(filedata),200
+@structurebp.route("/structure/<int:userid>/",defaults={"folder":-1},methods=["GET"])
+@structurebp.route("/structure/<int:userid>/<int:folder>",methods=["GET"])
+def Home(userid,folder):
+    userid=str(userid)
+    structure=paging(userid,folderno=folder)
+    if structure[0]==0:
+        return jsonify({"return":"No folders left ","instruction":"create a file before gettig the structure"}),400  
+    if  structure[0]==-1:
+        return jsonify({"return":"fileopeningerror","instruction":"tryagain"}),400
+    return jsonify(structure[1]),200
     
+
+@structurebp.route("/folders/<int:userid>/",methods=["GET"])
+def totalfolders(userid):
+    userid=str(userid)
+    lenoffolders=paging(userid,ask=1)
+    if lenoffolders[0]==0:
+        return jsonify({"return":"No folders left ","instruction":"create a file before gettig the structure"}),400  
+    if  lenoffolders[0]==-1:
+        return jsonify({"return":"fileopeningerror","instruction":"tryagain"}),400
+    return jsonify({"return":lenoffolders[1]}),200
+    
+
+
+
+def paging(userid,folderno=None,ask=0):
+    data=checkchangesinstats(userid)
+    if  data==0:
+        Createfilestructure(userid)
+    try:
+        filedata=File.jsonread(userid=(userid))
+    except Exception as e:
+        return [-1]
+    if ask:
+        toreturn=len(filedata)
+        if toreturn==0:
+            return [0]  
+        return [1,toreturn-1]  
+    
+    if folderno==-1:
+        return [1,filedata]
+    lenofpages=len(filedata)
+    if lenofpages <= folderno: ##measn no more folders left
+        return [0]
+    return [1,filedata[folderno]]

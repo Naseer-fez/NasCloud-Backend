@@ -33,7 +33,20 @@ def filedetails(userid,filepath):
         return [None]*3
     Fileextenstion=Fileoperation.getextenstion(filepath=filepath)
     return [filepath,Filesize,Fileextenstion]
+
+
+def checkchangesinstats(userid):
+       # Createfilestructure(Userid)  ##Just for the timebeing
+    PATH=Fileoperation.getstatsfile(userid)
+    try:
+        data=Fileoperation.jsonread(userid=userid,path=PATH)
+        return not  data["update"] # 1 is file chnage 
+       
+    except (FileNotFoundError,TypeError,Exception) as e:
+        return 0 #mesan file is not here 
     
+
+
 if __name__=="__main__":
     print(CreateDir(Directory=None,Filename=r"Live.mp4",Userid="1"))
     import shutil
