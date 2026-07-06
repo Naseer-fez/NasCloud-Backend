@@ -18,6 +18,7 @@ from routes.filesearch.searchfile import filesearch
 from routes.fileoperations.removetrash import trashbp
 from routes.publicacces.accesspublic import publicbp
 from routes.publicacces.setpublic import setpublicbp
+from routes.folderoperations.folderupload import folderuploadbp
 from utils.auth import enableauth
 import secrets
 load_dotenv()
@@ -29,7 +30,7 @@ def Createapp():
     #Register Blueprints
     routes=[uploadbp,downloadbp,structurebp,deletefilebp,
             updatefilebp,createbp,postionbp,spacebp,filesearch,trashbp,
-            setpublicbp,publicbp]
+            setpublicbp,publicbp,folderuploadbp]
     for blueprint in routes:
         app.register_blueprint(blueprint)
     
