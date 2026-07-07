@@ -13,7 +13,7 @@ downloadbp=Blueprint('Downloadbp',__name__)
 Fileoperation=get_storage()
 load_dotenv()
 # @downloadbp.route("/downloadfile/<int:userid>/",defaults={"folderpath":None,"filepath":None,},methods=["GET"])
-@downloadbp.route("/downloadfile/<int:userid>/",methods=["GET"]) 
+@downloadbp.route("/download/<int:userid>/",methods=["GET"]) 
 @getjson
 def Home(userid,data):
     userid=str(userid)
@@ -21,8 +21,13 @@ def Home(userid,data):
     filepath,filesize,filetype=filedetails((userid),filepath)
     if filepath is None:
         return jsonify({"retutn":"WrongFile Inputed Tryagain"}),400
-    headerdata={"filesize":filesize,"filetype":filetype}
+    
     SIZE=os.getenv("size") or 5
+    if Fileoperation.isdirectory(filepath):
+        headerdata={'Content-Disposition': 'attachment; filename=f"{fileapth}.zip"'}
+    else:
+        headerdata={"filesize":filesize,"filetype":filetype}
+        
     return Response(Fileoperation.readdata(filename=filepath,Sizeofdata=SIZE),
                     mimetype=filetype,headers=headerdata)
     

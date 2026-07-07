@@ -3,6 +3,8 @@ from dotenv import load_dotenv
 from pathlib import Path
 import json
 import shutil
+import zipfile
+import io
 load_dotenv()
 
 
@@ -47,6 +49,8 @@ class LocalStorage:
         return 1
     
     def readdata(self,filename,Sizeofdata=None): #cannot be more modular 
+            if (self.isdirectory(filename)):
+                self.readfolder(filename=filename,size=Sizeofdata)
             if Sizeofdata is not None:
                 with open(file=filename,mode="rb") as output:
                         while True:
@@ -57,8 +61,20 @@ class LocalStorage:
             else:
                 with open(file=filename,mode="r") as output:
                     return output
-
-    
+    def readfolder(self,filename,size):
+            #first need to zip this 
+            inmem=io.BytesIO()
+            with zipfile.ZipFile(inmem,"w",zipfile.ZIP_DEFLATED) as zip:
+                for root,dirs,files in os.walk(filename):
+                    filepath=os.path.join(root,file)
+                    archfile=os.path.relpath(filepath,filename)
+                    zip.write(archfile)
+                    inmem.seek(0)
+                    chunk=inmem.read()
+                    if chunk :
+                        yield chunk
+                    inmem.seek(0)
+                    inmem.truncate(0)
     def jsonwrite(self,userid,data,fileindent=4,filepath=None):
         if filepath is None:
             File=self.__openfile(userid,filename=None,filemode="w")

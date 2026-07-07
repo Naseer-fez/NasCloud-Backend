@@ -25,13 +25,15 @@ def filedetails(userid,filepath):
     Source=Fileoperation.source 
     orginalfile=filepath
     filepath=Fileoperation.joinpath(Source,[str(userid),filepath])
-    if Fileoperation.isdirectory(filepath):
-        return [None]*3
+
     try:
         Filesize=Fileoperation.Filesize(userid=userid,filepath=orginalfile)
     except FileNotFoundError as e:
         return [None]*3
-    Fileextenstion=Fileoperation.getextenstion(filepath=filepath)
+    if Fileoperation.isdirectory(filepath):
+        Fileextenstion='application/zip'
+    else:
+        Fileextenstion=Fileoperation.getextenstion(filepath=filepath)
     return [filepath,Filesize,Fileextenstion]
 
 

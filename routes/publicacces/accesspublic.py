@@ -23,7 +23,10 @@ def Home(userid,filesharing,time,tooken):
     filepath,filesize,filetype=filedetails((userid),decoded_filepath)
     if filepath is None:
         return jsonify({"retutn":"WrongFile Inputed Tryagain"}),400
-    headerdata={"filesize":filesize,"filetype":filetype}
+    if Fileoperation.isdirectory(filepath):
+        headerdata={'Content-Disposition': 'attachment; filename=f"{fileapth}.zip"'}
+    else:
+        headerdata={"filesize":filesize,"filetype":filetype}
     SIZE=os.getenv("size") or 5
     return Response(Fileoperation.readdata(filename=filepath,Sizeofdata=SIZE),
                     mimetype=filetype,headers=headerdata)
