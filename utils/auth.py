@@ -5,7 +5,7 @@ PUBLIC = {
     "login.home", #Login 
     "createaccount.home", #Create account
     "public.Home", # filesharing
-    "forgot.home" #forgotpassword
+    "forgot.home", #forgotpassword
     "forgot.verify"#codeofemail
 }
 
@@ -15,7 +15,7 @@ def enableauth(app):
     def enforcingauth():
         if request.endpoint in PUBLIC:
             return
-        return #For testing right now
+        # return #For testing right now
         auth_header = request.headers.get("auth", "")
         try:
             verify_jwt_in_request()
