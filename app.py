@@ -37,8 +37,8 @@ def Createapp():
     app.config["JWT_SECRET_KEY"]=os.getenv("jwt")
     #Configs
     CORS(app=app)    
-    enableauth(app)
     jwt = JWTManager(app)
+    enableauth(app)
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(int(os.getenv("jwtduration")))
     #DATABASE
     try:
