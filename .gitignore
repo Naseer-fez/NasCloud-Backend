@@ -4,3 +4,8 @@ __pycache__
 *.json
 *.html
 userdetails/
+Frontend/
+utils/native
+testfile.py
+testingendpoints/
+test.py

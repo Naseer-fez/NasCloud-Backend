@@ -4,3 +4,4 @@ dotenv
 flask_jwt_extended
 flask_sqlalchemy 
 pymysql
+gunicorn

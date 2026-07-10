@@ -34,7 +34,7 @@ def code(data):
     return jsonify(info[1]),400
     
     
-@forgotbp("/verify/code/",methods=["POST"])
+@forgotbp.route("/verify/code/",methods=["POST"])
 @getjson
 def verify(data):
     code=request.headers.get("token")
