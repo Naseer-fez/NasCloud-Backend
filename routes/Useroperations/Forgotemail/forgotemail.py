@@ -21,8 +21,7 @@ def home(data):
 
 
 @forgotbp.route("/forgot/code/",methods=["POST"])
-@getjson
-def verify(data):
+def code(data):
     code=request.headers.get("otp")
     if not code:
         return jsonify({"return":"no otp sent"}),401
@@ -30,8 +29,24 @@ def verify(data):
     if not email:
         return jsonify({"return":"no email sent"}),401
     info=STORAGE(email=email,otp=code,action="check")
-    if(info[1])==400:
-            return jsonify(info[0]),info[1]
-    return jsonify(info[0]),info[1]
+    if not (info[0]):
+            return jsonify(info[0]),401
+    return jsonify(info[1]),400
     
+    
+@forgotbp("/verify/code/",methods=["POST"])
+@getjson
+def verify(data):
+    code=request.headers.get("token")
+    if not code:
+        return jsonify({"return":"no otp sent"}),401
+    password=data.get("password")
+    email=data.get("email")
+    value=STORAGE(email=email,password=password,tooken=code,action="token")
+    if not value[0]:
+        return jsonify(value[1]),401
+    return jsonify({"return":"Password changed"}),200
+    
+    
+
     

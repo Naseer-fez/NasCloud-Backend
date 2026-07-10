@@ -6,7 +6,8 @@ PUBLIC = {
     "createaccount.home", #Create account
     "public.Home", # filesharing
     "forgot.home", #forgotpassword
-    "forgot.verify"#codeofemail
+    "forgot.code",#codeofemail
+    "forgot.verift"#verify page
 }
 
 def enableauth(app):

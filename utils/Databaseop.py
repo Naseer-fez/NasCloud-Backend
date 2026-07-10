@@ -103,6 +103,16 @@ def getemail(email):
         return [0,str(e)]
     
     
+def changepwd(useid,password):
+        ROW=db.session.query(User).filter_by(username=useid).first()
+        password=__hashing(password)
+        try:
+            ROW.password=password
+            db.session.commit()
+            return [1,"Password changed succefully"]
+        except Exception as e:
+                db.session.rollback()
+                return [0,f"Thier has been a error {e}"]
 
 
 def deletedb(data):
