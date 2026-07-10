@@ -21,6 +21,7 @@ def home(data):
 
 
 @forgotbp.route("/forgot/code/",methods=["POST"])
+@getjson
 def code(data):
     code=request.headers.get("otp")
     if not code:
@@ -31,7 +32,7 @@ def code(data):
     info=STORAGE(email=email,otp=code,action="check")
     if not (info[0]):
             return jsonify(info[0]),401
-    return jsonify(info[1]),400
+    return jsonify(info[1]),200
     
     
 @forgotbp.route("/verify/code/",methods=["POST"])
