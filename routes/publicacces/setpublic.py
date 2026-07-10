@@ -7,7 +7,7 @@ import os
 setpublicbp=Blueprint("setpublic",__name__)
 
 Fileoperation=get_storage()
-@setpublicbp.route("/access/<int:userid>/",methods=["GET"])
+@setpublicbp.route("/access/<int:userid>/",methods=["POST"])
 @getjson
 def Home(userid,data):
     userid=str(userid)

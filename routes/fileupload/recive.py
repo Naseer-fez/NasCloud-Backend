@@ -12,9 +12,7 @@ uploadbp=Blueprint('FileUpload',__name__)
 @uploadbp.route("/uploadfile/<int:Userid>",methods=["POST"]) 
 
 def home(Userid):
-    directory=request.form.get("directory")
-    Stream=request.environ["wsgi.input"]
-    Filename=os.getenv("DestinationFolder")
+    directory=request.form.get("directory") or "/"
     if 'filepath' not in request.files:
         return jsonify({"return": "No file provided"}), 400
     Recivedfile=str(request.files['filepath'].filename)
@@ -29,11 +27,11 @@ def home(Userid):
     tosavepath=Path(tosavepath)
     tosavepath=filecheck(tosavepath)
     if tosavepath==0:
-        return jsonify({"Too Many files already exist try a diffrentname"}),401
-    with open (file=Path(tosavepath),mode="ab") as File:
+        return jsonify({"return":"Too Many files already exist try a diffrentname"}),401
+    with open (file=Path(tosavepath),mode="wb") as File:
 
         while True:
-            Chunk=uploaded_file.stream.read((1024*1024)*int(os.getenv("size"), 16)) #16MB
+            Chunk=uploaded_file.stream.read((1024*1024)*int(os.getenv("size"), 10)) #10MB
             if not Chunk :
                 break
             File.write(Chunk)
