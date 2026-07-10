@@ -38,8 +38,9 @@ def Createapp():
     app.config["secret"] = os.getenv("secret")
     app.config["JWT_SECRET_KEY"]=os.getenv("jwt")
     #Configs
-    CORS(app=app)    
-    jwt = JWTManager(app)
+    FrontendURL = os.getenv("FrontendURL")
+    CORS(app, origins=FrontendURL)
+    JWTManager(app)
     enableratelimiter(app)
     enableauth(app)
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(int(os.getenv("jwtduration")))
@@ -68,5 +69,5 @@ app=Createapp()
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0",debug=True)
+    app.run(host="0.0.0.0", port=5002, debug=True)
 
