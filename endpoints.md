@@ -131,7 +131,7 @@ Method:GET
 ### <u>Data accepted</u>:
 #### NONE
 ### <u>Return:</u> 
-#### JSON(key)->return :<int:space> 
+#### JSON(key)->return : JSON(KEYS) (<int:usedspace>,<int:remaningspace>,<bool:update>)
 ___
 ## Create Account *
 ### <u>Endpoint</u>:
@@ -189,7 +189,7 @@ Method:POST
 #### forgot/code/
 Method:POST
 ### <u>Data accepted</u>:
-#### JSON(Keys): email .Header-> opt
+#### JSON(Keys): email .Header-> OTP
 ### <u>Return:</u>
 #### Failure:JSON(key)->return :Message
 #### Success: JSON(key)->return:token:
