@@ -1,5 +1,6 @@
 from models.database import db,User
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import or_
 import hashlib
 
 def writedb(data,update=0):
@@ -60,12 +61,13 @@ def updatedb(data):
 def readdb(data,input=0):
     username=data.get("username")
     password=data.get("password")
-    if(not username or not password):
-        return [0,"username or password not availabe"]
+    if(not password):
+        return [0,"password not availabe"]
     email=data.get("email")
     
     try:
-        ROW=db.session.query(User).filter_by(username=username).first()
+        ROW=db.session.query(User).filter(
+            or_(User.username==username,User.email==email) ).first()
         if not ROW and not input:
             userid=data.get("userid")
             if not userid: #measn data is complelty wrong

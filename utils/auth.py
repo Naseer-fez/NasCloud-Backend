@@ -7,7 +7,8 @@ PUBLIC = {
     "public.Home", # filesharing
     "forgot.home", #forgotpassword
     "forgot.code",#codeofemail
-    "forgot.verift"#verify page
+    "forgot.verify",#verify page
+    "docs.home"#API Documentation
 }
 
 def enableauth(app):
