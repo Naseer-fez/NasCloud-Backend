@@ -17,14 +17,14 @@ load_dotenv()
 @getjson
 def Home(userid,data):
     userid=str(userid)
-    filepath=data.get("filename")
+    filepath=data.get("filepath") or data.get("filename")
     filepath,filesize,filetype=filedetails((userid),filepath)
     if filepath is None:
         return jsonify({"retutn":"WrongFile Inputed Tryagain"}),400
     
     SIZE=os.getenv("size") or 5
     if Fileoperation.isdirectory(filepath):
-        headerdata={'Content-Disposition': 'attachment; filename=f"{fileapth}.zip"'}
+        headerdata={'Content-Disposition': 'attachment' ,"filename":f"{filepath}.zip"}
     else:
         headerdata={"filesize":filesize,"filetype":filetype}
         

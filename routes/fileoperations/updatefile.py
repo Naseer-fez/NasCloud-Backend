@@ -15,7 +15,7 @@ def Home(userid,data):
     statuscode=200
     if tosend[0] ==0:
         statuscode=400
-    updatefilestructure(userid,update=[filename,newname],operation="update")    
+    updatefilestructure(userid)    
     return jsonify({"return":tosend[1]}),statuscode
 
 
