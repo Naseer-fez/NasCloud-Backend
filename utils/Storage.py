@@ -3,8 +3,8 @@ from dotenv import load_dotenv
 from pathlib import Path
 import json
 import shutil
-import zipfile
-import io
+from datetime import datetime
+from stream_zip import stream_zip, ZIP_64
 load_dotenv()
 
 
@@ -63,24 +63,31 @@ class LocalStorage:
                 with open(file=filename,mode="r") as output:
                     yield  output  ##full file
     def readfolder(self,filename,size):
-            #first need to zip this 
-                inmem=io.BytesIO()
-                with zipfile.ZipFile(inmem,"w",zipfile.ZIP_DEFLATED) as zip:
-                    for root,dirs,files in os.walk(filename):
-                        for file in files:
-                            filepath=os.path.join(root,file)
-                            archfile=os.path.relpath(filepath,filename)
-                            zip.write(filepath,arcname=archfile)
-                chunksize=1024*1024*int(size)
-                inmem.seek(0)
-                try:
-                    while True:
-                        chunk=inmem.read(chunksize)
-                        if not chunk:
-                            break
-                        yield chunk
-                finally:                
-                    inmem.close()
+        def file_generator():
+            for root,dirs,files in os.walk(filename):
+                for file in files:
+                    filepath=os.path.join(root,file)
+                    archfile=os.path.relpath(filepath,filename).replace("\\","/")
+                    stat_info=os.stat(filepath)
+                    mtime=datetime.fromtimestamp(stat_info.st_mtime)
+                    mode=stat_info.st_mode
+                    def read_file_chunks(path):
+                        with open(path,'rb') as f:
+                            while True:
+                                chunk=f.read(64*1024)
+                                if not chunk:
+                                    break
+                                yield chunk
+                    yield (archfile,mtime,mode,ZIP_64,read_file_chunks(filepath))
+        chunksize=1024*1024*int(size)
+        buffer=bytearray()
+        for zipped_chunk in stream_zip(file_generator()):
+            buffer.extend(zipped_chunk)
+            while len(buffer)>=chunksize:
+                yield bytes(buffer[:chunksize])
+                del buffer[:chunksize]
+        if buffer:
+            yield bytes(buffer)
                 
     def jsonwrite(self,userid,data,fileindent=4,filepath=None):
         if filepath is None:
