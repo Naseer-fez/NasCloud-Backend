@@ -71,7 +71,7 @@ def Createfilestructure(userid):
         return 0 #User Donot exist
 
 
-def updatefilestructure(Userid,Updates,operation):
+def updatefilestructure(Userid,Updates=None,operation=None):
     # Createfilestructure(Userid)  ##Just for the timebeing
     PATH=Fileoperation.getstatsfile(Userid)
     try:
