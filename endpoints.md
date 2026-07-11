@@ -218,11 +218,21 @@ These endpoints do not require the `auth` header.
     ```
 
 ---
+### 7. Interactive API Documentation (Playground)
+*Access the Swagger-like interactive API documentation playground to view and test all endpoints.*
+
+- **Endpoint**: `/docs`
+- **Method**: `GET`
+- **Authentication**: None (Public)
+- **Responses**:
+  - **Success (`200 OK`)**: HTML page (Single-Page Application).
+
+---
 
 ## Private Endpoints
 These endpoints require the JWT token passed in the `auth` header.
 
-### 7. File Upload
+### 8. File Upload
 *Upload a single file to the specified directory.*
 
 - **Endpoint**: `/uploadfile/<int:Userid>`
@@ -268,7 +278,7 @@ These endpoints require the JWT token passed in the `auth` header.
 
 ---
 
-### 8. Folder Upload
+### 9. Folder Upload
 *Upload multiple files preserving folder structure.*
 
 - **Endpoint**: `/uploadfolder/<int:Userid>/`
@@ -308,7 +318,7 @@ These endpoints require the JWT token passed in the `auth` header.
 
 ---
 
-### 9. File/Folder Download
+### 10. File/Folder Download
 *Download a file or a folder (compressed as a zip).*
 
 - **Endpoint**: `/download/<int:userid>/`
@@ -334,7 +344,7 @@ These endpoints require the JWT token passed in the `auth` header.
 
 ---
 
-### 10. Share File or Folder (Generate Public Link)
+### 11. Share File or Folder (Generate Public Link)
 *Generate a shareable public access link for a file or folder.*
 
 - **Endpoint**: `/access/<int:userid>/`
@@ -366,7 +376,7 @@ These endpoints require the JWT token passed in the `auth` header.
 
 ---
 
-### 11. Folder Structure
+### 12. Folder Structure
 *Get the JSON structure of user directories.*
 
 - **Endpoint**: 
@@ -398,7 +408,7 @@ These endpoints require the JWT token passed in the `auth` header.
 
 ---
 
-### 12. Get Total Number of Folders
+### 13. Get Total Number of Folders
 *Get the number of folders for a user.*
 
 - **Endpoint**: `/folders/<int:userid>/`
@@ -421,7 +431,7 @@ These endpoints require the JWT token passed in the `auth` header.
 
 ---
 
-### 13. File/Folder Delete
+### 14. File/Folder Delete
 *Delete a file/folder or move it to trash.*
 
 - **Endpoint**: `/deletefile/<int:userid>/`
@@ -467,7 +477,7 @@ These endpoints require the JWT token passed in the `auth` header.
 
 ---
 
-### 14. Delete From Trash
+### 15. Delete From Trash
 *Permanently delete a file or folder from the trash directory.*
 
 - **Endpoint**: `/trash/<int:userid>/`
@@ -498,7 +508,7 @@ These endpoints require the JWT token passed in the `auth` header.
 
 ---
 
-### 15. File/Folder Rename
+### 16. File/Folder Rename
 *Rename an existing file or directory.*
 
 - **Endpoint**: `/updatefile/<int:userid>/`
@@ -540,7 +550,7 @@ These endpoints require the JWT token passed in the `auth` header.
 
 ---
 
-### 16. Create Folder
+### 17. Create Folder
 *Create an empty folder.*
 
 - **Endpoint**: `/createfolder/<int:userid>/`
@@ -571,7 +581,7 @@ These endpoints require the JWT token passed in the `auth` header.
 
 ---
 
-### 17. Change File Location (Move File/Folder)
+### 18. Change File Location (Move File/Folder)
 *Move a file or folder to a new destination.*
 
 - **Endpoint**: `/changefilelocation/<int:userid>/`
@@ -611,7 +621,7 @@ These endpoints require the JWT token passed in the `auth` header.
 
 ---
 
-### 18. File Search
+### 19. File Search
 *Search for files by name.*
 
 - **Endpoint**: `/searchfile/<int:userid>/<string:filename>/`
@@ -634,7 +644,7 @@ These endpoints require the JWT token passed in the `auth` header.
 
 ---
 
-### 19. Get User Space Usage
+### 20. Get User Space Usage
 *Get stats regarding user storage space utilization.*
 
 - **Endpoint**: `/userstats/<int:userid>/`
@@ -660,7 +670,7 @@ These endpoints require the JWT token passed in the `auth` header.
 
 ---
 
-### 20. Update Account Details
+### 21. Update Account Details
 *Modify account details (e.g. username, password, or email).*
 
 - **Endpoint**: `/updateacc/`
@@ -691,7 +701,7 @@ These endpoints require the JWT token passed in the `auth` header.
 
 ---
 
-### 21. Delete Account
+### 22. Delete Account
 *Permanently delete user account.*
 
 - **Endpoint**: `/deleteacc/`
