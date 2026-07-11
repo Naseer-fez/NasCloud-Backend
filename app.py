@@ -17,6 +17,7 @@ from routes.fileoperations.removetrash import trashbp
 from routes.publicacces.accesspublic import publicbp
 from routes.publicacces.setpublic import setpublicbp
 from routes.folderoperations.folderupload import folderuploadbp
+from routes.docs.docs import docsbp
 ####################    CORE    FEATURES    DONE  ####################
 #Acc Operations
 from routes.Useroperations.Login import loginbp
@@ -38,8 +39,10 @@ def Createapp():
     app.config["secret"] = os.getenv("secret")
     app.config["JWT_SECRET_KEY"]=os.getenv("jwt")
     #Configs
-    FrontendURL = os.getenv("FrontendURL")
-    CORS(app, origins=FrontendURL)
+    FrontendURL=[url.strip()
+    for url in os.getenv("FrontendURL", "").split(",")
+    if url.strip()]
+    Cors=CORS(app,resources={r"/*":{"origins":FrontendURL}})
     JWTManager(app)
     enableratelimiter(app)
     enableauth(app)
@@ -58,7 +61,8 @@ def Createapp():
     routes=[uploadbp,downloadbp,structurebp,deletefilebp,
             updatefilebp,createbp,postionbp,spacebp,filesearch,trashbp,
             setpublicbp,publicbp,folderuploadbp,
-            loginbp,accountcreationbp,deleteacc,updatebp,forgotbp]
+            loginbp,accountcreationbp,deleteacc,updatebp,forgotbp,
+            docsbp]
     for blueprint in routes:
         app.register_blueprint(blueprint)
     
@@ -69,5 +73,5 @@ app=Createapp()
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5002, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
 
