@@ -16,6 +16,6 @@ def Home(userid,data):
     obj=Fileoperation.deletefile(userid=userid,filepath=filename)
     if not obj:
         return  jsonify({"return":"Some error is removing the trash"})
-    updatefilestructure(Userid=userid,Updates=filename,operation="delete")
+    updatefilestructure(Userid=userid)
     updatespace(userid=userid,operation=filesize)
     return jsonify({"return":"removedsuccesully from trash"})

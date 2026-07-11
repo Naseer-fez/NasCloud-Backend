@@ -170,7 +170,8 @@ class LocalStorage:
         jsn=f"{userid}.json"
         jsonfilepath=self.userdetails/userid/jsn
         Path(filepath).mkdir(parents=True, exist_ok=True)
-        Path(jsonfilepath).mkdir(parents=True, exist_ok=True)
+        Path(jsonfilepath).parent.mkdir(parents=True, exist_ok=True)
+        self.jsonwrite(userid=userid, data=[], filepath=jsonfilepath)
         return 
 
     def fileexist(self,userid,filepath):
