@@ -37,7 +37,7 @@ def totalspaceused(userid):
     data=checkchanges(userid,path=PATH)
 
     if data[0]==1:
-        if (data[1].get("usedspace") is not None) and data[1].get("usedspace")==0:
+        if (data[1].get("usedspace") is not None) and data[1].get("update")==0:
             return data[1]
         
     #measn create the stats file first 
