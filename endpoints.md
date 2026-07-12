@@ -729,3 +729,45 @@ These endpoints require the JWT token passed in the `auth` header.
       "return": "Invalid credentials or delete failed"
     }
     ```
+
+---
+
+### 23. Recover File/Folder from Trash
+*Recover a file or folder from the trash directory back to its original location.*
+
+- **Endpoint**: `/recovertrash/<int:userid>/`
+- **Method**: `PUT`
+- **Authentication**: Required (`auth` header)
+- **Content-Type**: `application/json`
+- **Request Body**:
+  ```json
+  {
+    "trashpath": "path/to/file_in_trash"
+  }
+  ```
+  > [!NOTE]
+  > The `trashpath` value can be the relative path of the item inside the trash (either including or excluding the `trash/` prefix, and using either `/` or `\\` as separators). For example, both `"Fileees"` and `"trash/Fileees"` are accepted.
+- **Responses**:
+  - **Success (`200 OK`)**:
+    ```json
+    {
+      "return": "File transfred"
+    }
+    ```
+    > [!NOTE]
+    > Note the typo in the success response string `transfred`.
+  - **Failure (`400 Bad Request`)**:
+    ```json
+    {
+      "return": "Missing or invalid JSON payload."
+    }
+    ```
+    *or*
+    ```json
+    {
+      "return": "Error recovering  the files"
+    }
+    ```
+    > [!NOTE]
+    > Note the double space in the error response string `recovering  the`.
+

@@ -15,6 +15,7 @@ class LocalStorage:
         self.trash=str(os.getenv("trash","trash"))
         self.statsjson=str(os.getenv("stats","stats.json"))
         self.totalfiles=str(os.getenv("file","files.json"))
+        self.trashjson=str(os.getenv("file","trash.json"))
     def getfilepath(self,userid,filename=None,folderreq=0):
         if folderreq==1:
             basedir=self.source
@@ -168,7 +169,7 @@ class LocalStorage:
             else:
                 
                 os.remove(filepath)
-            return 1
+            return filepath
         except Exception as e:
             return 0
     def createnewuser(self,userid):
@@ -189,25 +190,34 @@ class LocalStorage:
     def rename(self,userid,filepath,tochange):
         filename=self.getreativepath(userid=userid,filename=filepath) #Get the fileloaction in the savedirectory
         filepath=self.getfilepath(userid=userid,filename=filename) #get the root directory
-        newfilepath=self.joinpath(filepath.parent,tochange) #new path using parent dir + new name
+        newfilename=self.getreativepath(userid=userid,filename=tochange)
+        newfilepath=self.getfilepath(userid=userid,filename=newfilename)
         os.rename(filepath,newfilepath)     #rename the file
         return 1
-    
+    def trashdata(self,userid):
+        userid=str(userid)
+        filepath=self.gettrashjson(userid=userid)
+        data=self.jsonread(userid,path=filepath)
+        return [data,filepath]
+        
+        
     def locationchnage(self,userid,oldpath,tochange):
-           #First get the file paths
-            basepath=(self.getfilepath(userid=userid,filename=oldpath)).parent
-            oldpathlocation=self.joinpath(basepath,oldpath)
-            tochangeparent=Path(tochange).parent
-            newlocation=self.joinpath(basepath,tochangeparent)
-            #First create the directory
-
-            Path(newlocation).mkdir(parents=True, exist_ok=True) #Folder is created 
-            filename=(Path(tochange).name) #extract the filename
-            #Now copy the files
-            newlocation=newlocation/filename
-            # self.__filecopy(source=oldpathlocation,destination=newlocation) #Binnary chunking
-            os.rename(oldpathlocation,newlocation)
-            return 1
+        # Resolve source absolute path
+        oldpathlocation = self.getfilepath(userid=userid, filename=oldpath)
+        
+        # Resolve destination absolute path
+        tochange_path = Path(tochange)
+        if tochange_path.is_absolute():
+            newlocation = tochange_path
+        else:
+            newlocation = self.getfilepath(userid=userid, filename=tochange)
+            
+        # Create destination parent directory if it does not exist
+        newlocation.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Move the file/folder
+        os.rename(oldpathlocation, newlocation)
+        return 1
             
         #    self.Createfolder(userid=userid,filepath=Path(newlocation))
     def __filecopy(self,source,destination):
@@ -229,9 +239,12 @@ class LocalStorage:
         stats=self.getfilestats(path)
         return {"createdtime":int(stats.st_ctime),"updatedtime":int(stats.st_mtime)}
     def movetotrash(self,userid,filename):
-        oldpath=Path(filename)
-        newpath=self.trash/oldpath
-        return self.locationchnage(userid=userid,oldpath=oldpath,tochange=newpath)
+        filename = self.getreativepath(userid=userid, filename=filename)
+        oldpath = self.getfilepath(userid=userid, filename=filename)
+        newpath = self.getfilepath(userid=userid, filename=self.joinpath(self.trash, filename))
+        newpath.parent.mkdir(parents=True, exist_ok=True) #create the directory
+        os.rename(oldpath, newpath)
+        
     def gettheprefix(self,userid,tosavepath):
         tosavepath=Path(tosavepath)
         tosavepath=self.trash/tosavepath
@@ -256,6 +269,19 @@ class LocalStorage:
         filepath=self.getfilepath(userid=userid,filename=None)
         filepath=filepath.parent/self.totalfiles
         return   filepath
+    def gettrashjson(self,userid):
+            PATH=self.getfilepath(userid=userid)
+            PATH=PATH.parent/self.trashjson
+            return PATH 
+    def recoverfromtrash(self,userid,trashpath,oldpath):
+        trashpath = self.getfilepath(userid=userid, filename=trashpath)
+        oldpath = self.getfilepath(userid=userid, filename=oldpath)
+        oldpath.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            os.rename(trashpath,oldpath)
+            return 1
+        except OSError as e:        
+            return 0
 def get_storage():
     return LocalStorage()
 
@@ -263,5 +289,5 @@ def get_storage():
 if __name__=="__main__":
     file=LocalStorage()
     # print(file.writedata("1","bzjk.txt","hheheh"))
-    print(file.joinpath("1",["12","22"]))
+    print(file.fromtrash('1',"12121","121"))
     

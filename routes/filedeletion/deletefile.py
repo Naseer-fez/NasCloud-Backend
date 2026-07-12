@@ -3,6 +3,7 @@ from utils.Storage import get_storage
 from utils.acceptjson import getjson
 from utils.updatespace import updatespace
 from utils.FolderStructure import updatefilestructure
+from utils.trashfile import addtotrash
 deletefilebp=Blueprint("delete",__name__)
 
 Fileoperation=get_storage()
@@ -33,6 +34,7 @@ def deletefile(userid,filename,operation,replace=0):
             Fileoperation.deletefile(userid=userid,filepath=filename)
             return [1,"Moved succesfully",filesize]
         Fileoperation.movetotrash(userid,filename)
+        addtotrash(userid=userid,filepath=filename)
         return [1,"Moved to trash",None]
     except FileNotFoundError as e:
         return [0,"Filenotfound",None]

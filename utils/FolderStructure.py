@@ -12,6 +12,7 @@ class FolderStructure:
         self.userid=str(userid)
         self.Directory=[]
         self.allfiles=dict()
+        self.trash=dict()
         self.currenttime=int(time.time())
         self.Folderdesign()
     def Folderdesign(self):

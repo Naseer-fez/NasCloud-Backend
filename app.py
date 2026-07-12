@@ -13,7 +13,8 @@ from routes.fileoperations.createdir import createbp
 from routes.fileoperations.postionchnage import postionbp
 from routes.filestats.spaceleft import spacebp
 from routes.filesearch.searchfile import filesearch 
-from routes.fileoperations.removetrash import trashbp
+from routes.fileoperations.recovertrash import recovertrash  ##used to move the file from the trash to its original postion
+from routes.fileoperations.deletetrash import trashbp
 from routes.publicacces.accesspublic import publicbp
 from routes.publicacces.setpublic import setpublicbp
 from routes.folderoperations.folderupload import folderuploadbp
@@ -42,7 +43,10 @@ def Createapp():
     FrontendURL=[url.strip()
     for url in os.getenv("FrontendURL", "").split(",")
     if url.strip()]
-    Cors=CORS(app,resources={r"/*":{"origins":FrontendURL}})
+    if FrontendURL==['*']:
+        CORS(app)
+    else:
+        CORS(app,resources={r"/*":{"origins":FrontendURL}},supports_credentials=True)
     JWTManager(app)
     enableratelimiter(app)
     enableauth(app)
@@ -61,7 +65,7 @@ def Createapp():
     routes=[uploadbp,downloadbp,structurebp,deletefilebp,
             updatefilebp,createbp,postionbp,spacebp,filesearch,trashbp,
             setpublicbp,publicbp,folderuploadbp,
-            loginbp,accountcreationbp,deleteacc,updatebp,forgotbp,
+            loginbp,accountcreationbp,deleteacc,updatebp,forgotbp,recovertrash,
             docsbp]
     for blueprint in routes:
         app.register_blueprint(blueprint)
