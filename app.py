@@ -35,6 +35,7 @@ from datetime import timedelta
 from routes.main import resetlink,startngrok
 #Models
 from models.database import db
+import re
 load_dotenv()
 from config import config
 def Createapp():
@@ -46,7 +47,8 @@ def Createapp():
     for url in os.getenv("FrontendURL", "*").split(",")
     if url.strip()]
     if FrontendURL==['*']:
-        CORS(app)
+        
+        CORS(app, resources={r"/*": {"origins": re.compile(r".*")}}, supports_credentials=True)
     else:
         CORS(app,resources={r"/*":{"origins":FrontendURL}},supports_credentials=True)
     if config.get("Ratelimiter",1):
@@ -56,7 +58,7 @@ def Createapp():
     loginoperations=loginbp,accountcreationbp,deleteacc,updatebp,forgotbp
     routes=[uploadbp,downloadbp,structurebp,deletefilebp,
                 updatefilebp,createbp,postionbp,spacebp,filesearch,trashbp,
-                setpublicbp,publicbp,folderuploadbp,healthbp
+                setpublicbp,publicbp,folderuploadbp,healthbp,
                 recovertrash,docsbp]
     if config.get("allowusers", 1):
         app.config["JWT_SECRET_KEY"]=os.getenv("jwt") or os.getenv("secret") #Secret

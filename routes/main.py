@@ -41,14 +41,20 @@ def resetlink():
     if not URL:
         raise TypeError("The backend url is missing")
     LINK=startngrok()
-    api=config.get("loginapi")
+    api=config.get("api_key")
+    allow_users = "1" if config.get("allowusers", False) else "0"
+    
+    import urllib.parse
+    params = {
+        "api": api,
+        "link": LINK,
+        "users": allow_users
+    }
+    query_string = urllib.parse.urlencode(params)
+    target_url = f"{URL.rstrip('/')}/register/api/?{query_string}"
+    
     try: #notify the center server
-        URL=f"{URL}/register/api/"
-        data={
-            "api":api,
-            "link":LINK
-        }
-        response=req.put(url=URL,json=data)
+        response=req.get(url=target_url)
         strc=response.status_code
         if strc==200:
             return LINK
