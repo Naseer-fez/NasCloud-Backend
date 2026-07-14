@@ -61,9 +61,9 @@ def Createapp():
         app.config["JWT_SECRET_KEY"]=os.getenv("jwt") or os.getenv("secret") #Secret
         for endpoint in loginoperations:
             routes.append(endpoint)
-            enableauth(app)
-            JWTManager(app)
-            app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(int(config.get("jwtduration",30)))
+        enableauth(app)
+        JWTManager(app)
+        app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(int(config.get("jwtduration",30)))
         #DATABASE
         app.config['SQLALCHEMY_DATABASE_URI']=os.getenv("Database","sqlite:///users.db")
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

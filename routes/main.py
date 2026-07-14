@@ -5,8 +5,9 @@ import os
 
 
 
-def getapi():
-    API = os.getenv("ngrokauth","3BqIDkoRJ447eifyDYKxMQCD4mW_bGgo32eaypS2zozbsPjb")
+def setapi():
+    
+    API = os.getenv("ngrokauth") 
     if not API:
         try:
             import winreg
@@ -24,6 +25,7 @@ def getapi():
     ngrok.set_auth_token(API)
 
 def startngrok():
+    setapi()
     listener=ngrok.forward(
         config.get("port",5000),)
     return listener.url()
@@ -31,18 +33,20 @@ def startngrok():
 
 
 
-URL=config.get("backend")
+
 # URL= "http://127.0.0.1:5000"
-API=getapi()
+
 def resetlink():
-    global URL
+    URL=config.get("backend")
     if not URL:
         raise TypeError("The backend url is missing")
     LINK=startngrok()
+    api=config.get("loginapi")
     try: #notify the center server
-        URL=f"{URL}/change/{URL}"
+        URL=f"{URL}/register/api/"
         data={
-            "LINK":LINK
+            "api":api,
+            "link":LINK
         }
         response=req.put(url=URL,json=data)
         strc=response.status_code
@@ -50,7 +54,7 @@ def resetlink():
             return LINK
     except Exception as e:
         raise TypeError("No link created")
-        return 0
+        
 
 
 
