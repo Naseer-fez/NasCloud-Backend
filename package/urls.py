@@ -1,6 +1,6 @@
 HELP_WEBSITE_URL = "https://example.com/help"
-CENTRAL_SERVER_URL = "https://example.com/api"
-DEFAULT_FRONTEND_URL = "http://localhost:5174"
+CENTRAL_SERVER_URL = "http://localhost:5000"
+DEFAULT_FRONTEND_URL = "http://localhost:5173"
 DEFAULT_CORS_ORIGIN = "*"
 NGROK_SIGNUP_URL = "https://ngrok.com"
 NGROK_DASHBOARD_URL = "https://dashboard.ngrok.com"

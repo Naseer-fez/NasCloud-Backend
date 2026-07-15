@@ -693,8 +693,12 @@ class ProgramSetupApp:
             "ngrok_token": token
         }
         
-        print(f"#FEZ {json.dumps(result)}")
-        sys.stdout.flush()
+        if sys.stdout is not None:
+            try:
+                print(f"#FEZ {json.dumps(result)}")
+                sys.stdout.flush()
+            except Exception:
+                pass
         
         try:
             x = self.root.winfo_x()

@@ -6,5 +6,7 @@ packages = [
     "sqlalchemy",
     "gunicorn",
     "waitress",
-    "ngrok"
+    "ngrok",
+    "requests",
+    "pymysql"
 ]

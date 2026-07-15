@@ -62,21 +62,31 @@ def build():
 
     # Step 2: Clean previous build artifacts (specifically the ones for this exe, or build/dist dir contents)
     print("[2/3] Cleaning previous server build artifacts...")
+    
     # Delete spec file if exists
     if os.path.exists(SPEC_FILE):
-        os.remove(SPEC_FILE)
-        print(f"  Removed: {SPEC_FILE}")
+        try:
+            os.remove(SPEC_FILE)
+            print(f"  Removed: {SPEC_FILE}")
+        except Exception as e:
+            print(f"  Warning: Could not remove {SPEC_FILE}: {e}")
         
     # Delete specific build folders inside build/ for this target to not disrupt setup wizard build if run sequentially
     target_build = os.path.join(BUILD_DIR, EXE_NAME)
     if os.path.exists(target_build):
-        shutil.rmtree(target_build)
-        print(f"  Removed: {target_build}")
+        try:
+            shutil.rmtree(target_build)
+            print(f"  Removed: {target_build}")
+        except Exception as e:
+            print(f"  Warning: Could not remove {target_build}: {e}")
 
     target_dist_exe = os.path.join(DIST_DIR, f"{EXE_NAME}.exe")
     if os.path.exists(target_dist_exe):
-        os.remove(target_dist_exe)
-        print(f"  Removed: {target_dist_exe}")
+        try:
+            os.remove(target_dist_exe)
+            print(f"  Removed: {target_dist_exe}")
+        except Exception as e:
+            print(f"  Warning: Could not remove {target_dist_exe}: {e}")
 
     # Step 3: Run PyInstaller
     print("[3/3] Running PyInstaller...")

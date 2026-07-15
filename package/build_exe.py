@@ -65,11 +65,14 @@ def build():
     print("[2/3] Cleaning previous builds...")
     for path in (BUILD_DIR, DIST_DIR, SPEC_FILE):
         if os.path.exists(path):
-            if os.path.isdir(path):
-                shutil.rmtree(path)
-            else:
-                os.remove(path)
-            print(f"  Removed: {path}")
+            try:
+                if os.path.isdir(path):
+                    shutil.rmtree(path)
+                else:
+                    os.remove(path)
+                print(f"  Removed: {path}")
+            except Exception as e:
+                print(f"  Warning: Could not remove {path}: {e}")
 
     # Step 3: Run PyInstaller
     print("[3/3] Running PyInstaller...")

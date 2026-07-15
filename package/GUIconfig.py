@@ -229,17 +229,32 @@ class ServerConfigApp:
         net_grid = ttk.Frame(net_frame)
         net_grid.pack(fill=tk.X)
 
-        ttk.Label(net_grid, text="Frontend website URL (URL):").grid(row=0, column=0, sticky=tk.W, pady=2)
-        self.url_var = tk.StringVar()
-        self.url_entry = ttk.Entry(net_grid, textvariable=self.url_var, width=45)
-        self.url_entry.grid(row=0, column=1, padx=5, pady=2)
+        # Row 0: Central API Key
+        ttk.Label(net_grid, text="Central API Key (api_key):").grid(row=0, column=0, sticky=tk.W, pady=2)
+        self.api_key_var = tk.StringVar()
+        self.api_key_entry = ttk.Entry(net_grid, textvariable=self.api_key_var, width=45)
+        self.api_key_entry.grid(row=0, column=1, padx=5, pady=2)
+        
+        import webbrowser
+        self.api_key_help = ttk.Label(
+            net_grid,
+            text="Get API Key",
+            foreground="#0066cc",
+            cursor="hand2",
+            font=("Segoe UI", 9, "underline")
+        )
+        self.api_key_help.grid(row=0, column=2, padx=10, sticky=tk.W)
+        self.api_key_help.bind("<Button-1>", lambda e: webbrowser.open_new((self.url_var.get() or DEFAULT_FRONTEND_URL) + "/login"))
 
         self.create_help_link(
             net_grid,
             "Connections & URLs Help",
-            "Frontend website URL (URL):\nThe link to your client web interface application (e.g. http://localhost:5174).\n\nCORS Header (FrontendURL):\nControls client request access permissions.\n\nServer Host:\nThe network interface the server binds to.\n\nServer Port:\nThe port number the server listens on.\n\nWorker Threads:\nNumber of concurrent request handler threads."
-        ).grid(row=0, column=2, padx=10, sticky=tk.N)
+            "Central API Key (api_key):\nThe API key received from registering on the main server.\n\nFrontend Access Code (code):\nThe access code for users to login via the frontend.\n\nOptional Password (password):\nPassword required along with the access code.\n\nFrontend website URL (URL):\nThe link to your client web interface application (e.g. http://localhost:5173).\n\nCORS Header (FrontendURL):\nControls client request access permissions.\n\nServer Host:\nThe network interface the server binds to.\n\nServer Port:\nThe port number the server listens on.\n\nWorker Threads:\nNumber of concurrent request handler threads."
+        ).grid(row=0, column=3, padx=10, sticky=tk.N)
 
+        self.access_code_var = tk.StringVar()
+        self.opt_password_var = tk.StringVar()
+        self.url_var = tk.StringVar()
         self.cors_var = tk.StringVar()
         self.host_var = tk.StringVar()
         self.port_var = tk.IntVar()
@@ -258,21 +273,33 @@ class ServerConfigApp:
         # Advanced Settings Frame (grid layout for fields)
         self.adv_net_frame = ttk.Frame(net_frame, padding=(0, 5, 0, 0))
         
-        ttk.Label(self.adv_net_frame, text="CORS Origin Header (FrontendURL):").grid(row=0, column=0, sticky=tk.W, pady=2)
+        ttk.Label(self.adv_net_frame, text="Frontend Access Code (code):").grid(row=0, column=0, sticky=tk.W, pady=2)
+        self.access_code_entry = ttk.Entry(self.adv_net_frame, textvariable=self.access_code_var, width=45)
+        self.access_code_entry.grid(row=0, column=1, padx=5, pady=2)
+        
+        ttk.Label(self.adv_net_frame, text="Optional Password (password):").grid(row=1, column=0, sticky=tk.W, pady=2)
+        self.opt_password_entry = ttk.Entry(self.adv_net_frame, textvariable=self.opt_password_var, width=45, show="●")
+        self.opt_password_entry.grid(row=1, column=1, padx=5, pady=2)
+
+        ttk.Label(self.adv_net_frame, text="Frontend website URL (URL):").grid(row=2, column=0, sticky=tk.W, pady=2)
+        self.url_entry = ttk.Entry(self.adv_net_frame, textvariable=self.url_var, width=45)
+        self.url_entry.grid(row=2, column=1, padx=5, pady=2)
+        
+        ttk.Label(self.adv_net_frame, text="CORS Origin Header (FrontendURL):").grid(row=3, column=0, sticky=tk.W, pady=2)
         self.cors_entry = ttk.Entry(self.adv_net_frame, textvariable=self.cors_var, width=45)
-        self.cors_entry.grid(row=0, column=1, padx=5, pady=2)
+        self.cors_entry.grid(row=3, column=1, padx=5, pady=2)
 
-        ttk.Label(self.adv_net_frame, text="Server Host:").grid(row=1, column=0, sticky=tk.W, pady=2)
+        ttk.Label(self.adv_net_frame, text="Server Host:").grid(row=4, column=0, sticky=tk.W, pady=2)
         self.host_entry = ttk.Entry(self.adv_net_frame, textvariable=self.host_var, width=45)
-        self.host_entry.grid(row=1, column=1, padx=5, pady=2)
+        self.host_entry.grid(row=4, column=1, padx=5, pady=2)
 
-        ttk.Label(self.adv_net_frame, text="Server Port:").grid(row=2, column=0, sticky=tk.W, pady=2)
+        ttk.Label(self.adv_net_frame, text="Server Port:").grid(row=5, column=0, sticky=tk.W, pady=2)
         self.port_spin = ttk.Spinbox(self.adv_net_frame, from_=1, to=65535, textvariable=self.port_var, width=8)
-        self.port_spin.grid(row=2, column=1, sticky=tk.W, padx=5, pady=2)
+        self.port_spin.grid(row=5, column=1, sticky=tk.W, padx=5, pady=2)
 
-        ttk.Label(self.adv_net_frame, text="Worker Threads:").grid(row=3, column=0, sticky=tk.W, pady=2)
+        ttk.Label(self.adv_net_frame, text="Worker Threads:").grid(row=6, column=0, sticky=tk.W, pady=2)
         self.threads_spin = ttk.Spinbox(self.adv_net_frame, from_=1, to=64, textvariable=self.threads_var, width=8)
-        self.threads_spin.grid(row=3, column=1, sticky=tk.W, padx=5, pady=2)
+        self.threads_spin.grid(row=6, column=1, sticky=tk.W, padx=5, pady=2)
 
         # Actions Panel
         action_frame = ttk.Frame(main_frame)
@@ -362,6 +389,9 @@ class ServerConfigApp:
         self.cooldown_var.set(server_data.get("cooldowntime") or config.get("cooldowntime", DEFAULT_COOLDOWN_SEC))
         self.toggle_rl_states()
         
+        self.api_key_var.set(server_data.get("api_key") or config.get("api_key", ""))
+        self.access_code_var.set(server_data.get("access_code") or config.get("access_code", ""))
+        self.opt_password_var.set(server_data.get("opt_password") or config.get("opt_password", ""))
         self.url_var.set(server_data.get("URL") or config.get("URL", DEFAULT_FRONTEND_URL))
         self.cors_var.set(server_data.get("FrontendURL") or config.get("FrontendURL", DEFAULT_CORS_ORIGIN))
         self.host_var.set(server_data.get("host") or config.get("host", DEFAULT_HOST))
@@ -620,31 +650,15 @@ class ServerConfigApp:
         else:
             expanded_rl = rl_path
 
-        # ── Account Creation Flow (when login is disabled) ──
-        initial_username = ""
-        initial_email = ""
-        initial_password = ""
+        # Read Central API Key from Connections UI variable
+        api_key = self.api_key_var.get().strip()
 
-        if not self.allow_users_var.get():
-            cred_result = self.show_credential_dialog()
-            
-            if cred_result == "SKIP":
-                # User skipped — show security warning
-                should_continue = self.show_security_warning()
-                if not should_continue:
-                    return  # Go back to config page
-            elif cred_result is None:
-                # Dialog was closed (X button) — stay on config page
+        if not api_key:
+            api_key = self.show_api_key_dialog()
+            if api_key is None:
+                # User closed or cancelled dialog — stay on config page
                 return
-            else:
-                # User created credentials
-                initial_username, initial_email, initial_password = cred_result
-
-        # Prompt for API Key
-        api_key = self.show_api_key_dialog()
-        if api_key is None:
-            # User closed API key dialog — stay on config page
-            return
+            self.api_key_var.set(api_key)
 
         if api_key:
             try:
@@ -688,9 +702,11 @@ class ServerConfigApp:
             "host": self.host_var.get().strip() if hasattr(self, "host_var") and self.host_var.get() else "0.0.0.0",
             "port": self.port_var.get() if hasattr(self, "port_var") and self.port_var.get() else 5000,
             "threads": self.threads_var.get() if hasattr(self, "threads_var") and self.threads_var.get() else 4,
-            "initial_username": initial_username,
-            "initial_email": initial_email,
-            "initial_password": initial_password
+            "initial_username": "",
+            "initial_email": "",
+            "initial_password": "",
+            "access_code": self.access_code_var.get().strip() if hasattr(self, "access_code_var") else "",
+            "opt_password": self.opt_password_var.get().strip() if hasattr(self, "opt_password_var") else ""
         }
 
         # 2. Retrieve setup/installer config properties from packageconfig.json
@@ -742,6 +758,15 @@ class ServerConfigApp:
                 print(f"Warning: Could not update config.py variable in {config_py_path}", file=sys.stderr)
         else:
             print(f"Warning: {CODE_CONFIG_SCRIPT} not found in {self.workspace_dir}", file=sys.stderr)
+
+        # 7. Auto-fill the frontend URL via url.py
+        try:
+            url_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "url.py")
+            if os.path.exists(url_script):
+                import subprocess
+                subprocess.run([sys.executable, url_script], cwd=self.workspace_dir, capture_output=True)
+        except Exception as e:
+            print(f"Warning: Failed to execute url.py to auto-fill frontend URL: {e}", file=sys.stderr)
 
         print(json.dumps(combined_config))
         sys.stdout.flush()
@@ -958,7 +983,8 @@ class ServerConfigApp:
             font=("Segoe UI", 9, "underline")
         )
         help_link.grid(row=0, column=2, padx=(10, 0), pady=5)
-        help_link.bind("<Button-1>", lambda e: webbrowser.open_new(HELP_WEBSITE_URL))
+        frontend_login_url = (config.get("URL") or DEFAULT_FRONTEND_URL) + "/login"
+        help_link.bind("<Button-1>", lambda e: webbrowser.open_new(frontend_login_url))
         
         fields.columnconfigure(1, weight=1)
         

@@ -29,12 +29,15 @@ def main():
         setup_completed = True
         config.reload()
         
-        # Clear all setup widgets from the root window
-        for widget in root.winfo_children():
-            widget.destroy()
+        def transition():
+            # Clear all setup widgets from the root window
+            for widget in root.winfo_children():
+                widget.destroy()
+                
+            # Start Phase 2 (Server Configuration) inside the same root window
+            build_config_gui()
             
-        # Start Phase 2 (Server Configuration) inside the same root window
-        build_config_gui()
+        root.after(100, transition)
 
     def on_setup_cancel():
         root.destroy()

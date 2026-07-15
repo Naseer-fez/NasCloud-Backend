@@ -22,12 +22,14 @@ try:
         DEFAULT_HOST, DEFAULT_PORT, DEFAULT_THREADS, CENTRAL_SERVER_URL
     )
     from packages import packages
+    from GUIconfig import ServerConfigApp
 except ImportError:
     from package.pckconfig import (
         config, APP_DISPLAY_NAME, APP_NAME,
         DEFAULT_HOST, DEFAULT_PORT, DEFAULT_THREADS, CENTRAL_SERVER_URL
     )
     from package.packages import packages
+    from package.GUIconfig import ServerConfigApp
 
 
 class ServerLauncher:
@@ -174,6 +176,12 @@ class ServerLauncher:
             command=self.stop_all, state="disabled"
         )
         self.stop_btn.pack(side=tk.LEFT)
+
+        self.config_btn = ttk.Button(
+            btn_frame, text="⚙  Configure",
+            command=self.open_config_gui
+        )
+        self.config_btn.pack(side=tk.LEFT, padx=(8, 0))
 
         ttk.Button(
             btn_frame, text="Exit",
@@ -336,9 +344,19 @@ class ServerLauncher:
 
         # ── Step 2: Start Waitress Server ──
         self.set_status("Starting server...", "#dcdcaa")
-        local_url = f"http://{self.host}:{self.port}"
+        bind_host = config.get("bind_host")
+        local_host = config.get("local_host")
+        register_host = local_host if self.host == bind_host else self.host
+        local_url = f"http://{register_host}:{self.port}"
         self.root.after(0, lambda: self.local_var.set(local_url))
         self.log(f"Starting Waitress on {self.host}:{self.port}...", "info")
+
+        # Copy current environment and explicitly inject configured api_key as 'accesstooken'
+        env_vars = os.environ.copy()
+        env_vars["PYTHONUNBUFFERED"] = "1"
+        api_key = config.get("api_key", "")
+        if api_key:
+            env_vars["accesstooken"] = api_key
 
         try:
             self.server_process = subprocess.Popen(
@@ -348,6 +366,7 @@ class ServerLauncher:
                  f"--threads={self.threads}",
                  "app:app"],
                 cwd=self.workspace,
+                env=env_vars,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
@@ -400,7 +419,7 @@ class ServerLauncher:
             self.log(f"Starting ngrok tunnel → port {self.port}...", "info")
             try:
                 self.ngrok_process = subprocess.Popen(
-                    [self.ngrok_path, "http", str(self.port)],
+                    [self.ngrok_path, "http", f"{register_host}:{self.port}"],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT
                 )
@@ -423,6 +442,13 @@ class ServerLauncher:
                 self.log("Ngrok not configured — skipping tunnel.", "warning")
             elif not self.ngrok_token:
                 self.log("Ngrok authtoken not set — skipping tunnel.", "warning")
+
+        # Fallback check: See if an active ngrok tunnel is already running (e.g. started by app.py)
+        if self.url_var.get() == "Not connected":
+            public_url = self._get_ngrok_url(retries=3, delay=1)
+            if public_url:
+                self.set_url(public_url)
+                self.log(f"Detected active ngrok tunnel: {public_url}", "success")
 
         # ── Done ──
         self.set_status("● Running", "#4ec9b0")
@@ -489,29 +515,33 @@ class ServerLauncher:
         self.log("All processes terminated.", "success")
 
     def notify_central_server(self, server_url):
-        """Send an HTTP POST request to the Central Server with our URL and API Key."""
+        """Send an HTTP GET request to the Central Server with our URL and API Key."""
         api_key = config.get("api_key", "")
+        access_code = config.get("access_code", "")
+        opt_password = config.get("opt_password", "")
         # If CENTRAL_SERVER_URL is not set or placeholder, skip
         if not CENTRAL_SERVER_URL or "example.com" in CENTRAL_SERVER_URL:
             self.log("Skipping Central Server notification: CENTRAL_SERVER_URL is a placeholder.", "info")
             return
 
         def task():
+            import urllib.parse
             self.log(f"Notifying Central Server ({CENTRAL_SERVER_URL})...", "info")
-            data = {
-                "api_key": api_key,
-                "server_url": server_url
+            params = {
+                "api": api_key,
+                "link": server_url,
+                "users": "1" if config.get("allowusers", False) else "0"
             }
+            query_string = urllib.parse.urlencode(params)
+            base_url = CENTRAL_SERVER_URL.rstrip('/')
+            target_url = f"{base_url}/register/api/?{query_string}"
             try:
-                payload = json.dumps(data).encode('utf-8')
                 req = urllib.request.Request(
-                    CENTRAL_SERVER_URL,
-                    data=payload,
+                    target_url,
                     headers={
-                        'Content-Type': 'application/json',
                         'User-Agent': 'PersonalDrive-Server/1.0'
                     },
-                    method='POST'
+                    method='GET'
                 )
                 with urllib.request.urlopen(req, timeout=8) as resp:
                     status = resp.status
@@ -521,8 +551,49 @@ class ServerLauncher:
             except Exception as e:
                 self.log(f"Failed to notify Central Server: {e}", "warning")
 
+            if access_code:
+                self.log("Registering Frontend Access Code...", "info")
+                try:
+                    payload = json.dumps({
+                        "api": api_key,
+                        "code": access_code,
+                        "userpassword": opt_password if opt_password else None
+                    }).encode('utf-8')
+                    
+                    req_user = urllib.request.Request(
+                        f"{base_url}/register/user/",
+                        data=payload,
+                        headers={
+                            'Content-Type': 'application/json',
+                            'User-Agent': 'PersonalDrive-Server/1.0'
+                        },
+                        method='POST'
+                    )
+                    with urllib.request.urlopen(req_user, timeout=8) as resp:
+                        self.log("Frontend access code registered successfully.", "success")
+                except Exception as e:
+                    self.log(f"Failed to register access code: {e}", "warning")
+
         # Run in a background thread so we don't freeze the GUI
         threading.Thread(target=task, daemon=True).start()
+
+    def open_config_gui(self):
+        """Open the Server Configuration GUI in a new window."""
+        config_win = tk.Toplevel(self.root)
+        
+        def on_complete(combined_config):
+            config_win.destroy()
+            config.reload()
+            self.workspace = config.get("dir", "")
+            self.python_path = config.get("python", "")
+            self.ngrok_path = config.get("ngrok", "")
+            self.ngrok_token = config.get("ngrok_token", "")
+            self.host = config.get("host", DEFAULT_HOST)
+            self.port = config.get("port", DEFAULT_PORT)
+            self.threads = config.get("threads", DEFAULT_THREADS)
+            self.log("Server settings reloaded.", "success")
+            
+        ServerConfigApp(config_win, on_complete=on_complete, on_cancel=config_win.destroy)
 
     # ── Window Close ───────────────────────────────────────
     def on_close(self):

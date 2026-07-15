@@ -86,8 +86,8 @@ if getattr(sys, 'frozen', False):
     # Running as a PyInstaller .exe — use the directory containing the .exe
     _CONFIG_DIR = os.path.dirname(sys.executable)
 else:
-    # Running as a normal Python script
-    _CONFIG_DIR = os.path.dirname(os.path.abspath(__file__))
+    # Running as a normal Python script — point to the root of the codebase (parent directory of package)
+    _CONFIG_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 _CONFIG_PATH = os.path.join(_CONFIG_DIR, PACKAGE_CONFIG_FILE)
 
@@ -118,7 +118,9 @@ _DEFAULT_CONFIG = {
     "threads": DEFAULT_THREADS,
     "initial_username": "",
     "initial_email": "",
-    "initial_password": ""
+    "initial_password": "",
+    "bind_host": "0.0.0.0",
+    "local_host": "127.0.0.1"
 }
 
 
