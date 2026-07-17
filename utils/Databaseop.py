@@ -8,7 +8,7 @@ def writedb(data,update=0):
     username=data.get("username")
     password=data.get("password")
     if(not username or not password):
-        return [0,"username or password not availabe"]
+        return [0,"username or password not available"]
     email=data.get("email")
     password=__hashing(password)
     ROW=User(username=username,password=password,email=email)
@@ -18,7 +18,7 @@ def writedb(data,update=0):
         
     except  IntegrityError:
         db.session.rollback()
-        return [0,"The username  already exist"]
+        return [0,"The username already exists"]
     except Exception as e:
         db.session.rollback()
         return [0,str(e)]
@@ -54,7 +54,7 @@ def updatedb(data):
     except Exception as e:
         db.session.rollback()
         return [0,str(e)]
-    return [1,"Updated succefully"]
+    return [1,"Updated successfully"]
     
     
     
@@ -62,7 +62,7 @@ def readdb(data,input=0):
     username=data.get("username")
     password=data.get("password")
     if(not password):
-        return [0,"password not availabe"]
+        return [0,"password not available"]
     email=data.get("email")
     
     try:
@@ -70,7 +70,7 @@ def readdb(data,input=0):
             or_(User.username==username,User.email==email) ).first()
         if not ROW and not input:
             userid=data.get("userid")
-            if not userid: #measn data is complelty wrong
+            if not userid: #means data is completely wrong
                 return [0,"No user found"]
             try: #also check by username also 
                 ROW=db.query.filter_by(userid=userid).first()
@@ -90,7 +90,7 @@ def readdb(data,input=0):
     if ROWPASS==password:
            return [1,USERID]
     else:
-        return [0,"username and password is incorrect"]
+        return [0,"username and password are incorrect"]
         
 
 
@@ -106,15 +106,17 @@ def getemail(email):
     
     
 def changepwd(useid,password):
-        ROW=db.session.query(User).filter_by(username=useid).first()
+        ROW=db.session.query(User).filter_by(userid=useid).first()
         password=__hashing(password)
         try:
+            if not ROW:
+                return [0, "No user found with the given ID"]
             ROW.password=password
             db.session.commit()
-            return [1,"Password changed succefully"]
+            return [1,"Password changed successfully"]
         except Exception as e:
                 db.session.rollback()
-                return [0,f"Thier has been a error {e}"]
+                return [0,f"There has been an error: {e}"]
 
 
 def deletedb(data):
@@ -130,7 +132,7 @@ def deletedb(data):
     except Exception as e:
         db.session.rollback()
         return [0,str(e)]
-    return [1,"Delete succesdully"]
+    return [1,"Deleted successfully"]
 
 
 def __hashing(password):

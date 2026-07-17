@@ -43,7 +43,8 @@ def totalspaceused(userid):
     #     Createfilestructure(userid) # means reorgainse the files tructure
     
     space=spacecalculator(userid=userid) #recalut for the updation 
-    data={"usedspace":int(space),"remaningspace":int(availabelforuser(userid)-space),
+    limit = availableforuser(userid)
+    data={"usedspace":int(space),"remaningspace":int(limit-space),"remainingspace":int(limit-space),
             "update":0}
     jsonoperation(userid=userid,data=data,path=PATH)
     return data
@@ -58,7 +59,9 @@ def jsonoperation(userid,data,path=None):
 def updatespace(userid,operation):
     currentspace=totalspaceused(userid)
     currentspace["usedspace"]=currentspace["usedspace"]+operation
-    currentspace["remaningspace"]=currentspace["remaningspace"]-operation
+    new_rem = currentspace.get("remaningspace", currentspace.get("remainingspace", 0)) - operation
+    currentspace["remaningspace"]=new_rem
+    currentspace["remainingspace"]=new_rem
     if currentspace["remaningspace"]>=0:
         jsonoperation(userid=userid,data=currentspace)
         return currentspace
@@ -87,10 +90,11 @@ def checkchanges(userid,path=None):
     
     
 
-def availabelforuser(userid):
+def availableforuser(userid):
     GB=1073741824
-    if userid:
-        return config.get("basic","15")*GB
+    basic_val = config.get("basic", 15)
+    return int(basic_val) * GB
+
     
 
         

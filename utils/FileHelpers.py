@@ -12,7 +12,7 @@ def CreateDir(Userid,Directory,Filename):
             DIR=Fileoperation.joinpath(DIR,[Userid,Directory])
         Fileoperation.Createfolder(userid=Userid,filepath=DIR)        
         Filename=Fileoperation.getfilename(userid=Userid,filepath=Filename)
-        return str(Fileoperation.joinpath(DIR,Filename)) #Returnt the paths where the file is supposed to store
+        return str(Fileoperation.joinpath(DIR,Filename)) #Return the path where the file is supposed to be stored
     
             
 
@@ -31,21 +31,22 @@ def filedetails(userid,filepath):
     except FileNotFoundError as e:
         return [None]*3
     if Fileoperation.isdirectory(filepath):
-        Fileextenstion='application/zip'
+        Fileextension='application/zip'
     else:
-        Fileextenstion=Fileoperation.getextenstion(filepath=filepath)
-    return [filepath,Filesize,Fileextenstion]
+        Fileextension=Fileoperation.getextenstion(filepath=filepath)
+    return [filepath,Filesize,Fileextension]
 
 
 def checkchangesinstats(userid):
        # Createfilestructure(Userid)  ##Just for the timebeing
     PATH=Fileoperation.getstatsfile(userid)
     try:
-        data=Fileoperation.jsonread(userid=userid,path=PATH)
-        return not  data["update"] # 1 is file chnage 
-       
-    except (FileNotFoundError,TypeError,Exception) as e:
-        return 0 #mesan file is not here 
+        data = Fileoperation.jsonread(userid=userid, path=PATH)
+        if isinstance(data, dict):
+            return not data.get("update", 0) # 1 is file change 
+        return 0
+    except Exception:
+        return 0
     
 
 

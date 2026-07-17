@@ -9,21 +9,28 @@ from config import config
 
 class LocalStorage:
     def __init__ (self):
-        self.source = Path(config.get("DestinationFolder"))
-        self.userdetails = Path(config.get("Userfolder"))
+        self.source = Path(config.get("DestinationFolder","Data"))
+        self.userdetails = Path(config.get("Userfolder","userdetails"))
         self.trash = str(config.get("trash", "trash"))
         self.statsjson = str(config.get("stats", "stats.json"))
         self.totalfiles = str(config.get("file", "files.json"))
         self.trashjson = str(config.get("trashfile", "trash.json"))
     def getfilepath(self,userid,filename=None,folderreq=0):
         if folderreq==1:
-            basedir=self.source
-            basedir=basedir/str(userid)
+            basedir=self.source/str(userid)
             return basedir
         if filename is None: #For json file
             basedir=self.userdetails/str(userid)
             return basedir/f"{userid}.json"
-        basedir=self.source/str(userid)/filename
+        # Sanitize the filename/path to prevent resetting base path to drive root or traversing directories
+        clean_parts = []
+        for part in Path(filename).parts:
+            cleaned = part.rstrip('\\/')
+            if cleaned.endswith(':') or cleaned in ('', '.', '..'):
+                continue
+            clean_parts.append(part)
+        safe_filename = Path(*clean_parts)
+        basedir=self.source/str(userid)/safe_filename
 
         return basedir
 
@@ -33,6 +40,15 @@ class LocalStorage:
             filepath=filename
         else:
             filepath=self.getfilepath(filename=filename,userid=str(userid))
+            
+        # Auto-create user files/directories if accessing root structure and it doesn't exist
+        if filename is None and "r" in filemode and not os.path.exists(filepath):
+            self.createnewuser(userid)
+            
+        # Auto-create parent directory if opening in write/append mode
+        if "w" in filemode or "a" in filemode:
+            Path(filepath).parent.mkdir(parents=True, exist_ok=True)
+            
         output= open(filepath,mode=filemode) 
         return output
     
@@ -99,12 +115,11 @@ class LocalStorage:
         return 1
     
     def jsonread(self,userid,path=None):
-            if path is None:
-                File=self.__openfile(userid,filename=None,filemode="r")
-            else:
-                File=path.open()
-            Data={}
             try:
+                if path is None:
+                    File=self.__openfile(userid,filename=None,filemode="r")
+                else:
+                    File=path.open()
                 with File:
                     Data=json.load(File)
                     return Data
@@ -117,11 +132,21 @@ class LocalStorage:
     
     def joinpath(self,Currentpath,tojoin):
         Currentpath=Path(Currentpath)
+        
+        def safe_relative(p):
+            clean_parts = []
+            for part in Path(p).parts:
+                cleaned = part.rstrip('\\/')
+                if cleaned.endswith(':') or cleaned in ('', '.', '..'):
+                    continue
+                clean_parts.append(part)
+            return Path(*clean_parts)
+
         if isinstance(tojoin, list):
             for  path in tojoin:
-                Currentpath=Currentpath/path
+                Currentpath=Currentpath/safe_relative(path)
             return Currentpath          
-        return Currentpath/tojoin
+        return Currentpath/safe_relative(tojoin)
 
     def getreativepath(self,userid,filename):
         filepath=Path(filename)
@@ -220,7 +245,7 @@ class LocalStorage:
             
         #    self.Createfolder(userid=userid,filepath=Path(newlocation))
     def __filecopy(self,source,destination):
-        SIZE=1024*1024*int(config.get("size"), 16)
+        SIZE=1024*1024*int(config.get("size",16))
         with open (source,mode="rb") as SRC:
             with open(destination,mode="wb") as DES:
                 while True:
@@ -246,7 +271,7 @@ class LocalStorage:
         
     def gettheprefix(self,userid,tosavepath):
         tosavepath=Path(tosavepath)
-        tosavepath=self.trash/tosavepath
+        tosavepath=Path(self.trash)/tosavepath
         attempts=1000
         prefix=0
         original_stemp=tosavepath.stem
@@ -288,5 +313,5 @@ def get_storage():
 if __name__=="__main__":
     file=LocalStorage()
     # print(file.writedata("1","bzjk.txt","hheheh"))
-    print(file.fromtrash('1',"12121","121"))
+    print(file.recoverfromtrash('1',"12121","121"))
     

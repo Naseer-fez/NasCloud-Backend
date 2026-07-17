@@ -24,6 +24,17 @@ class FolderStructure:
         Fileoperation.jsonwrite(self.userid,data=self.Directory,fileindent=4)  ##Forfolderstructure
         # print(statspath)
         Fileoperation.jsonwrite(self.userid,data=self.allfiles,fileindent=4,filepath=statspath)
+        
+        # Reset the update flag to 0 in stats.json
+        statfile = Fileoperation.getstatsfile(self.userid)
+        try:
+            statsdata = Fileoperation.jsonread(userid=self.userid, path=statfile)
+            if not isinstance(statsdata, dict):
+                statsdata = {}
+        except Exception:
+            statsdata = {}
+        statsdata["update"] = 0
+        Fileoperation.jsonwrite(self.userid, data=statsdata, filepath=statfile)
     def FolderTraverse(self,Foldernames,Folderpath):
             Data=[]
             for Folder in Foldernames:
