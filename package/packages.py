@@ -8,5 +8,6 @@ packages = [
     "waitress",
     "ngrok",
     "requests",
-    "pymysql"
+    "pymysql",
+    "apirlpy"
 ]
