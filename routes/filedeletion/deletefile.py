@@ -58,6 +58,7 @@ def deletefile(userid,filename,operation,replace=0):
          ##copying the data from that file to another file 
         if filename:
             Fileoperation.locationchnage(userid=userid,tochange=filename,oldpath=oldpath)
+            addtotrash(userid=userid,filepath=filename)
             return [1,"Moved to trash",None]
         return [0,"similar files already exist",None]
     except PermissionError as e:
