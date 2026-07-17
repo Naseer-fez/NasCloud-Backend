@@ -1,6 +1,6 @@
 flask
 flask-cors
-dotenv
+python-dotenv
 flask_jwt_extended
 flask_sqlalchemy 
 gunicorn
