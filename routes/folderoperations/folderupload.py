@@ -19,8 +19,8 @@ def home(Userid):
     directory=request.form.get("directory")
     if directory is None:
         return  jsonify({"return":"No folder path mentioned"}),400
-    Destiantion=config.get("DestinationFolder")
-    directory=Path(os.path.join(Destiantion,str(Userid),directory))
+    Destination=config.get("DestinationFolder")
+    directory=Path(os.path.join(Destination,str(Userid),directory))
     #first create the directory
     directory.mkdir(parents=True,exist_ok=True) #directory is created 
     #now stream the file

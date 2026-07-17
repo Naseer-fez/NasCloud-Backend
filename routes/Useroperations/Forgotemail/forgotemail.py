@@ -40,10 +40,10 @@ def code(data):
 def verify(data):
     code=request.headers.get("token")
     if not code:
-        return jsonify({"return":"no otp sent"}),401
+        return jsonify({"return":"no token sent"}),401
     password=data.get("password")
     email=data.get("email")
-    value=STORAGE(email=email,password=password,tooken=code,action="token")
+    value=STORAGE(email=email,password=password,token=code,action="token")
     if not value[0]:
         return jsonify(value[1]),401
     return jsonify({"return":"Password changed"}),200

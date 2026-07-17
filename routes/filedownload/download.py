@@ -17,7 +17,7 @@ def Home(userid,data):
     filepath=data.get("filepath") or data.get("filename")
     filepath,filesize,filetype=filedetails((userid),filepath)
     if filepath is None:
-        return jsonify({"retutn":"WrongFile Inputed Tryagain"}),400
+        return jsonify({"return":"Wrong file input. Try again."}),400
     
     SIZE=config.get("size",5) 
     if Fileoperation.isdirectory(filepath):

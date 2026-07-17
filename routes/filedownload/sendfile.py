@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 
 
-def Filedowload(filepath):
+def Filedownload(filepath):
         SIZE=int(os.getenv("size")) or 5
         with open (file=filepath,mode="rb") as output:
             while True:
@@ -21,8 +21,8 @@ def filedetails(userid,filepath):
     if not os.path.exists(filepath):
         return [None]
     Filesize=os.path.getsize(filepath)
-    Fileextenstion=os.path.splitext(filepath)[1]
-    return [filepath,Filesize,Fileextenstion]
+    Fileextension=os.path.splitext(filepath)[1]
+    return [filepath,Filesize,Fileextension]
     
     
     

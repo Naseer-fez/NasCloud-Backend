@@ -12,9 +12,9 @@ def Home(userid,folder):
     userid=str(userid)
     structure=paging(userid,folderno=folder)
     if structure[0]==0:
-        return jsonify({"return":"No folders left ","instruction":"create a file before gettig the structure"}),400  
+        return jsonify({"return":"No folders left ","instruction":"create a file before getting the structure"}),400  
     if  structure[0]==-1:
-        return jsonify({"return":"fileopeningerror","instruction":"tryagain"}),400
+        return jsonify({"return":"file opening error","instruction":"try again"}),400
     return jsonify(structure[1]),200
     
 
@@ -23,9 +23,9 @@ def totalfolders(userid):
     userid=str(userid)
     lenoffolders=paging(userid,ask=1)
     if lenoffolders[0]==0:
-        return jsonify({"return":"No folders left ","instruction":"create a file before gettig the structure"}),400  
+        return jsonify({"return":"No folders left ","instruction":"create a file before getting the structure"}),400  
     if  lenoffolders[0]==-1:
-        return jsonify({"return":"fileopeningerror","instruction":"tryagain"}),400
+        return jsonify({"return":"file opening error","instruction":"try again"}),400
     return jsonify({"return":lenoffolders[1]}),200
     
 
@@ -48,6 +48,6 @@ def paging(userid,folderno=None,ask=0):
     if folderno==-1:
         return [1,filedata]
     lenofpages=len(filedata)
-    if lenofpages <= folderno: ##measn no more folders left
+    if lenofpages <= folderno: ##means no more folders left
         return [0]
     return [1,filedata[folderno]]

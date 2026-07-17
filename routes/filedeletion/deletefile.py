@@ -12,7 +12,7 @@ Fileoperation=get_storage()
 def Home(userid,data):
     userid=str(userid)
     filename=str(data.get("filepath"))
-    operation=operation = 1 if data.get("trash") is None else data.get("trash")
+    operation = 1 if data.get("trash") is None else data.get("trash")
     replace= 0 if data.get("replace") is None else data.get("replace")
     tosend=deletefile(userid=(userid),filename=filename,operation=operation,replace=replace)
     filesize=tosend[2]
@@ -32,13 +32,13 @@ def deletefile(userid,filename,operation,replace=0):
         filesize=Fileoperation.Filesize(userid=userid,filepath=filename)
         if not operation:
             Fileoperation.deletefile(userid=userid,filepath=filename)
-            return [1,"Moved succesfully",filesize]
+            return [1,"Moved successfully",filesize]
         Fileoperation.movetotrash(userid,filename)
         addtotrash(userid=userid,filepath=filename)
         return [1,"Moved to trash",None]
     except FileNotFoundError as e:
         return [0,"Filenotfound",None]
-    except FileExistsError as e: #measn a file arely of smae name is in trash
+    except FileExistsError as e: #means a file already of same name is in trash
         if replace:
             try:
                 import shutil
@@ -61,7 +61,7 @@ def deletefile(userid,filename,operation,replace=0):
             return [1,"Moved to trash",None]
         return [0,"similar files already exist",None]
     except PermissionError as e:
-        return [0, "Something went wrong please try again ",None]
+        return [0, "Something went wrong please try again",None]
 
     except Exception as e:
 

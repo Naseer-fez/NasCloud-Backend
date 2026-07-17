@@ -22,7 +22,7 @@ def Home(userid,data):
 def createdir(userid,foldername):
     try:
         Fileoperation.Createfolder(userid=userid,filepath=foldername)
-        return [1,"file renamed"]
+        return [1,"folder created"]
     except PermissionError as e:
         return [0,"permissiondenied"]
     except Exception as e:

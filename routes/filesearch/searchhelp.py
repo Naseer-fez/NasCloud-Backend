@@ -5,10 +5,10 @@ Fileoperation=get_storage()
 
 def searchfile(userid,tofind):
     #check if the cache exist 
-    filepath=Fileoperation.getfilesjson(userid) #create a substuite of this
+    filepath=Fileoperation.getfilesjson(userid) #create a substitute of this
     checkchanges(userid=userid) #Because i need accurate files so , the createfolder will do that for me 
     try:
-        filedata=Fileoperation.jsonread(userid=userid,path=filepath) #measning reading the cache file path
+        filedata=Fileoperation.jsonread(userid=userid,path=filepath) #meaning reading the cache file path
     except FileNotFoundError as e:
         filedata=createfilescache(userid,filepath)
         if filedata==-1:
@@ -22,7 +22,7 @@ def searchfile(userid,tofind):
 def createfilescache(userid,path):
 
 
-    #First verify that the user is availabe
+    #First verify that the user is available
     result,filepath=(Fileoperation.userexist(str(userid)))
     if not  result:
         return -1
