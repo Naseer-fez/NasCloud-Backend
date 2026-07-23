@@ -157,6 +157,28 @@ def extractpython(reporthook=None):
             zip_ref.extract(member, bin_dir)
             if reporthook and total_count > 0:
                 reporthook(idx + 1, 1, total_count)
+
+    # Ensure import site and site-packages are enabled in ._pth configuration
+    try:
+        for f in os.listdir(bin_dir):
+            if f.endswith("._pth"):
+                pth_path = os.path.join(bin_dir, f)
+                with open(pth_path, "r", encoding="utf-8") as pf:
+                    content = pf.read()
+                new_lines = []
+                for line in content.splitlines():
+                    if line.strip() in ("#import site", "# import site"):
+                        new_lines.append("import site")
+                    else:
+                        new_lines.append(line)
+                if "Lib/site-packages" not in new_lines:
+                    new_lines.insert(0, "Lib/site-packages")
+                if "import site" not in new_lines:
+                    new_lines.append("import site")
+                with open(pth_path, "w", encoding="utf-8") as pf:
+                    pf.write("\n".join(new_lines) + "\n")
+    except Exception:
+        pass
                 
     python_exe = os.path.join(bin_dir, "python.exe")
     return python_exe
