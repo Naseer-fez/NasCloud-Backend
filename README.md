@@ -16,7 +16,7 @@
 
 NasCloud is a NAS (Network Attached Storage) management and access platform. This repo is the backend API that handles file storage, user accounts, uploads, downloads, sharing, and everything in between. It runs on your own machine and connects to the NasCloud Central Server through a Cloudflare tunnel, so you can access your files from anywhere.
 
-This is one piece of the NasCloud ecosystem. The other parts live in the [NasCloud Services](https://github.com/Naseer-fez/PersonalDrive) repo, which contains the Frontend (React web app) and the Central Server (authentication and URL resolution).
+This is one piece of the NasCloud ecosystem. The other parts live in the [NasCloud ](https://github.com/Naseer-fez/NasCloud) repo, which contains the Frontend (React web app) and the Central Server (https://github.com/Naseer-fez/Nascloud-mainserver) (authentication and URL resolution).
 
 ## Getting Started
 
