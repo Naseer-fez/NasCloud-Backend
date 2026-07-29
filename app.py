@@ -43,7 +43,7 @@ from config import config
 def Createapp():
     app = Flask(__name__)
     #Scerets
-    app.config["secret"] = os.getenv("secret",secrets.token_urlsafe(32)) 
+    app.config["secret"] = os.getenv("secret",config.get("secret",secrets.token_urlsafe(32))) 
     #Configs
     FrontendURL=[url.strip()
     for url in os.getenv("FrontendURL", "*").split(",")
@@ -96,18 +96,30 @@ def Createapp():
 app=Createapp()
 
 
+def getargs():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+    "--link",
+    type=int,
+    default=1,
+    choices=[0, 1],
+    help="Enable link setup (1=Enable Main server, 0= Disable  main server )"
+)
+    return parser.parse_args()
+
 
 if __name__ == "__main__":
     import threading
     import time
-    
-    def background_setup():
-        time.sleep(5)  # Give Flask a moment to bind the port
-        LINK = resetlink()
-        with app.app_context():
-            app.config["link"] = LINK
+    if  getargs(): 
+        def background_setup():
+            time.sleep(5)  # Give Flask a moment to bind the port
+            LINK = resetlink()
+            with app.app_context():
+                app.config["link"] = LINK
+            threading.Thread(target=background_setup, daemon=True).start()
 
-    threading.Thread(target=background_setup, daemon=True).start()
     port=config.get("port",5002)
     host=config.get("host","0.0.0.0")
     app.run(host=host, port=int(port), debug=True)

@@ -5,6 +5,17 @@ import re
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 
+class DummyStream:
+    def write(self, text):
+        pass
+    def flush(self):
+        pass
+
+if sys.stdout is None:
+    sys.stdout = DummyStream()
+if sys.stderr is None:
+    sys.stderr = DummyStream()
+
 try:
     from pckconfig import (
         config, CONFIG_TITLE, HELP_WEBSITE_URL,
@@ -245,6 +256,11 @@ class ServerConfigApp:
         self.jwt_var = tk.IntVar()
         self.jwt_spin = ttk.Spinbox(self.jwt_frame, from_=1, to=1440, textvariable=self.jwt_var, width=10)
         self.jwt_spin.pack(side=tk.LEFT, padx=5, pady=2)
+
+        ttk.Label(self.jwt_frame, text="  JWT Secret:").pack(side=tk.LEFT, pady=2)
+        self.jwt_secret_var = tk.StringVar()
+        self.jwt_secret_entry = ttk.Entry(self.jwt_frame, textvariable=self.jwt_secret_var, width=25)
+        self.jwt_secret_entry.pack(side=tk.LEFT, padx=5, pady=2)
 
         # Brevo email configuration frame (shown when Allow Users is enabled)
         self.brevo_frame = ttk.Frame(self.sec_frame)
@@ -523,6 +539,7 @@ class ServerConfigApp:
             allowusers_val = config.get("allowusers") if config.get("allowusers") is not None else config.get("Allowlogin", DEFAULT_ALLOW_USERS)
         self.allow_users_var.set(allowusers_val)
         self.jwt_var.set(server_data.get("jwtduration") or config.get("jwtduration", DEFAULT_JWT_MINUTES))
+        self.jwt_secret_var.set(server_data.get("secret") or config.get("secret", ""))
 
         # Load Brevo email config from .env file if available
         brevo_api_val = config.get('EmailAPi', '')
@@ -888,6 +905,7 @@ class ServerConfigApp:
             "Allowlogin": self.allow_users_var.get(), # Legacy alias
             "api_key": api_key,
             "jwtduration": self.jwt_var.get(),
+            "secret": self.jwt_secret_var.get().strip() if getattr(self, "jwt_secret_var", None) and self.jwt_secret_var.get().strip() else __import__('secrets').token_urlsafe(32),
             "ratelimiter": expanded_rl,
             "FrontendURL": self.cors_var.get().strip() if hasattr(self, "cors_var") and self.cors_var.get() else "*",
             "URL": self.url_var.get().strip(),

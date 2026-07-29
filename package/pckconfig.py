@@ -4,6 +4,17 @@ import sys
 import re
 import shutil
 
+class DummyStream:
+    def write(self, text):
+        pass
+    def flush(self):
+        pass
+
+if sys.stdout is None:
+    sys.stdout = DummyStream()
+if sys.stderr is None:
+    sys.stderr = DummyStream()
+
 # ──────────────────────────────────────────────
 # BRANDING CONSTANTS — Single Source of Truth
 # ──────────────────────────────────────────────

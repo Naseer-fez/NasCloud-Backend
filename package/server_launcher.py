@@ -357,7 +357,8 @@ class ServerLauncher:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
-                bufsize=1
+                bufsize=1,
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
             )
         except FileNotFoundError:
             self.log("ERROR: Could not start server — venv python not found.", "error")
@@ -366,15 +367,14 @@ class ServerLauncher:
             self.root.after(0, lambda: self.stop_btn.config(state="disabled"))
             return
 
+        # Start log streaming thread immediately to keep pipe empty
+        self.log_thread_active = True
+        threading.Thread(target=self._stream_server_logs, daemon=True).start()
+
         # Give the server a moment to start (or fail)
         time.sleep(3)
         if self.server_process.poll() is not None:
-            # Process already exited — read output for error
-            out = self.server_process.stdout.read() if self.server_process.stdout else ""
             self.log(f"ERROR: Server exited immediately.", "error")
-            if out:
-                for line in out.strip().split("\n"):
-                    self.log(f"  {line}", "error")
             self.set_status("Server Crashed", "#d93025")
             self.server_process = None
             self.root.after(0, lambda: self.start_btn.config(state="normal"))
@@ -383,10 +383,6 @@ class ServerLauncher:
 
         self.log("Server started successfully!", "success")
         self.is_running = True
-
-        # Start log streaming thread
-        self.log_thread_active = True
-        threading.Thread(target=self._stream_server_logs, daemon=True).start()
 
         # ── Step 3: Ensure Cloudflared Binary exists ──
         self.set_status("Checking cloudflared...", "#b06000")

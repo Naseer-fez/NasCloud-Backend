@@ -43,10 +43,43 @@ def find_executable(name):
             return os.path.normpath(candidate)
     return None
 
+def fix_pth_file(bin_dir):
+    """Ensure import site and Lib/site-packages are active in embeddable Python ._pth files."""
+    try:
+        if not os.path.exists(bin_dir):
+            return
+        for f in os.listdir(bin_dir):
+            if f.endswith("._pth"):
+                pth_path = os.path.join(bin_dir, f)
+                with open(pth_path, "r", encoding="utf-8") as pf:
+                    content = pf.read()
+                lines = [l.strip() for l in content.splitlines()]
+                new_lines = []
+                for line in lines:
+                    if line in ("#import site", "# import site"):
+                        new_lines.append("import site")
+                    else:
+                        new_lines.append(line)
+                if "Lib/site-packages" not in new_lines:
+                    new_lines.insert(0, "Lib/site-packages")
+                if "import site" not in new_lines:
+                    new_lines.append("import site")
+                with open(pth_path, "w", encoding="utf-8") as pf:
+                    pf.write("\n".join(new_lines) + "\n")
+    except Exception:
+        pass
+
 def checkpython():
-    # 0. Check AppData Local NasCloud bin check (portable Python environment)
-    bin_py = os.path.join(get_local_bin_dir(), "python.exe")
+    # 0. Check configured python path first
+    cfg_py = config.get("python")
+    if cfg_py and os.path.exists(cfg_py):
+        return True, "configured_python", os.path.normpath(cfg_py)
+
+    # 1. Check AppData Local NasCloud bin check (portable Python environment)
+    bin_dir = get_local_bin_dir()
+    bin_py = os.path.join(bin_dir, "python.exe")
     if os.path.exists(bin_py):
+        fix_pth_file(bin_dir)
         return True, "local_python", os.path.normpath(bin_py)
 
     # 1. Instant check: use the currently running Python interpreter path
@@ -180,6 +213,22 @@ def extractpython(reporthook=None):
     except Exception:
         pass
                 
+    # Copy C-runtime DLLs if present in _MEIPASS or System32 for clean Windows systems
+    for dll_name in ("vcruntime140.dll", "msvcp140.dll", "vcruntime140_1.dll"):
+        target_dll = os.path.join(bin_dir, dll_name)
+        if not os.path.exists(target_dll):
+            base_dir = getattr(sys, '_MEIPASS', None)
+            source_dll = None
+            if base_dir and os.path.exists(os.path.join(base_dir, dll_name)):
+                source_dll = os.path.join(base_dir, dll_name)
+            elif os.path.exists(os.path.join(r"C:\Windows\System32", dll_name)):
+                source_dll = os.path.join(r"C:\Windows\System32", dll_name)
+            if source_dll:
+                try:
+                    shutil.copy2(source_dll, target_dll)
+                except Exception:
+                    pass
+
     python_exe = os.path.join(bin_dir, "python.exe")
     return python_exe
 

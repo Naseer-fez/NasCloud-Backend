@@ -20,3 +20,4 @@ env/
 package/build/
 package/dist/
 package/*.spec
+*.zip

@@ -10,6 +10,17 @@ import zipfile
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog, simpledialog
 
+class DummyStream:
+    def write(self, text):
+        pass
+    def flush(self):
+        pass
+
+if sys.stdout is None:
+    sys.stdout = DummyStream()
+if sys.stderr is None:
+    sys.stderr = DummyStream()
+
 try:
     from pckconfig import (
         config, APP_NAME, APP_DISPLAY_NAME,

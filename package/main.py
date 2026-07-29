@@ -7,7 +7,19 @@ Bundled as a single self-contained application (NasCloud.exe).
 """
 import sys
 import os
+import multiprocessing
 import tkinter as tk
+
+class DummyStream:
+    def write(self, text):
+        pass
+    def flush(self):
+        pass
+
+if sys.stdout is None:
+    sys.stdout = DummyStream()
+if sys.stderr is None:
+    sys.stderr = DummyStream()
 
 try:
     from pckconfig import config, APP_DISPLAY_NAME, APP_VERSION, GITHUB_OWNER, GITHUB_REPO, GITHUB_BRANCH
@@ -182,4 +194,5 @@ def main():
 
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     main()
