@@ -60,14 +60,23 @@ def fix_pth_file(bin_dir):
                         new_lines.append("import site")
                     else:
                         new_lines.append(line)
-                if "Lib/site-packages" not in new_lines:
-                    new_lines.insert(0, "Lib/site-packages")
+                for required in ("Lib", "Lib/site-packages", "."):
+                    if required not in new_lines:
+                        new_lines.insert(0, required)
                 if "import site" not in new_lines:
                     new_lines.append("import site")
                 with open(pth_path, "w", encoding="utf-8") as pf:
                     pf.write("\n".join(new_lines) + "\n")
     except Exception:
         pass
+
+def safe_extract_member(zip_ref, member, target_dir):
+    """Extract one zip member while preventing archive path traversal."""
+    target_root = os.path.abspath(target_dir)
+    target_path = os.path.abspath(os.path.join(target_dir, member.filename))
+    if os.path.commonpath([target_root, target_path]) != target_root:
+        raise ValueError(f"Unsafe archive path: {member.filename}")
+    zip_ref.extract(member, target_dir)
 
 def checkpython():
     # 0. Check configured python path first
@@ -140,6 +149,11 @@ def checkpython():
     return False, None, None
 
 def checkcloudflared():
+    # 0. Check configured cloudflared path first
+    cfg_cf = config.get("cloudflared")
+    if cfg_cf and os.path.exists(cfg_cf) and os.path.getsize(cfg_cf) > 1000000:
+        return True, "configured_cloudflared", os.path.normpath(cfg_cf)
+
     # 1. AppData Local NasCloud bin check
     local_cf = os.path.normpath(os.path.join(get_local_bin_dir(), CLOUDFLARED_EXE))
     if os.path.exists(local_cf) and os.path.getsize(local_cf) > 1000000:
@@ -187,7 +201,7 @@ def extractpython(reporthook=None):
         members = zip_ref.infolist()
         total_count = len(members)
         for idx, member in enumerate(members):
-            zip_ref.extract(member, bin_dir)
+            safe_extract_member(zip_ref, member, bin_dir)
             if reporthook and total_count > 0:
                 reporthook(idx + 1, 1, total_count)
 
@@ -204,8 +218,9 @@ def extractpython(reporthook=None):
                         new_lines.append("import site")
                     else:
                         new_lines.append(line)
-                if "Lib/site-packages" not in new_lines:
-                    new_lines.insert(0, "Lib/site-packages")
+                for required in ("Lib", "Lib/site-packages", "."):
+                    if required not in new_lines:
+                        new_lines.insert(0, required)
                 if "import site" not in new_lines:
                     new_lines.append("import site")
                 with open(pth_path, "w", encoding="utf-8") as pf:
@@ -287,4 +302,3 @@ def CLOUDFLARED():
 def NGROK():
     """Deprecated alias for CLOUDFLARED"""
     return CLOUDFLARED()
-

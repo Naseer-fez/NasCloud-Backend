@@ -18,7 +18,7 @@ if sys.stderr is None:
 
 try:
     from pckconfig import (
-        config, CONFIG_TITLE, HELP_WEBSITE_URL,
+        config, APP_DISPLAY_NAME, CONFIG_TITLE, HELP_WEBSITE_URL,
         LBL_DIRECTORIES, LBL_LIMITS, LBL_SECURITY, LBL_RATE_LIMITER, LBL_NETWORK,
         DEFAULT_BANDWIDTH, DEFAULT_USER_SPACE, DEFAULT_JWT_MINUTES,
         DEFAULT_FREQUENCY, DEFAULT_RESET_SEC, DEFAULT_COOLDOWN_SEC,
@@ -28,7 +28,7 @@ try:
     )
 except ImportError:
     from package.pckconfig import (
-        config, CONFIG_TITLE, HELP_WEBSITE_URL,
+        config, APP_DISPLAY_NAME, CONFIG_TITLE, HELP_WEBSITE_URL,
         LBL_DIRECTORIES, LBL_LIMITS, LBL_SECURITY, LBL_RATE_LIMITER, LBL_NETWORK,
         DEFAULT_BANDWIDTH, DEFAULT_USER_SPACE, DEFAULT_JWT_MINUTES,
         DEFAULT_FREQUENCY, DEFAULT_RESET_SEC, DEFAULT_COOLDOWN_SEC,
@@ -100,7 +100,6 @@ class ServerConfigApp:
         except Exception as e:
             print(f"Warning: Could not load logo image: {e}", file=sys.stderr)
             
-        from pckconfig import APP_DISPLAY_NAME
         self.title_lbl = ttk.Label(
             self.header_frame,
             text=f"{APP_DISPLAY_NAME} — Server Configuration",
@@ -144,9 +143,16 @@ class ServerConfigApp:
         # Bind mousewheel scroll
         def _on_mousewheel(event):
             canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+        def _unbind_mousewheel(event=None):
+            try:
+                canvas.unbind_all('<MouseWheel>')
+            except Exception:
+                pass
         
         canvas.bind('<Enter>', lambda e: canvas.bind_all('<MouseWheel>', _on_mousewheel))
-        canvas.bind('<Leave>', lambda e: canvas.unbind_all('<MouseWheel>'))
+        canvas.bind('<Leave>', _unbind_mousewheel)
+        canvas.bind('<Destroy>', _unbind_mousewheel)
 
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)

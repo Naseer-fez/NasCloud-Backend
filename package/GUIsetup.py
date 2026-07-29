@@ -30,7 +30,7 @@ try:
         NGROK_SIGNUP_URL, NGROK_DASHBOARD_URL, PYTHON_EXE, NGROK_EXE, CLOUDFLARED_EXE,
         apply_google_light_theme, get_resource_path
     )
-    from installdepen import PYTHON, NGROK, CLOUDFLARED, extractpython, extractcloudflared, get_asset_path
+    from installdepen import PYTHON, NGROK, CLOUDFLARED, extractpython, extractcloudflared, get_asset_path, safe_extract_member
 except ImportError:
     from package.pckconfig import (
         config, APP_NAME, APP_DISPLAY_NAME,
@@ -40,7 +40,7 @@ except ImportError:
         NGROK_SIGNUP_URL, NGROK_DASHBOARD_URL, PYTHON_EXE, NGROK_EXE, CLOUDFLARED_EXE,
         apply_google_light_theme, get_resource_path
     )
-    from package.installdepen import PYTHON, NGROK, CLOUDFLARED, extractpython, extractcloudflared, get_asset_path
+    from package.installdepen import PYTHON, NGROK, CLOUDFLARED, extractpython, extractcloudflared, get_asset_path, safe_extract_member
 
 class ProgramSetupApp:
     def __init__(self, root, start_screen=None, on_complete=None, on_cancel=None):
@@ -142,7 +142,7 @@ class ProgramSetupApp:
 
         self.install_python_btn = ttk.Checkbutton(
             row1, 
-            text="Install Python", 
+            text="Extract Bundled Python", 
             variable=self.python_install_var,
             style="Toolbutton",
             command=self.update_python_states
@@ -151,7 +151,7 @@ class ProgramSetupApp:
 
         self.install_cloudflared_btn = ttk.Checkbutton(
             row1, 
-            text="Install Cloudflare", 
+            text="Extract Bundled Cloudflare", 
             variable=self.cloudflared_install_var,
             style="Toolbutton",
             command=self.update_cloudflared_states
@@ -868,7 +868,7 @@ class ProgramSetupApp:
                     members = zip_ref.infolist()
                     total_count = len(members)
                     for idx, member in enumerate(members):
-                        zip_ref.extract(member, parent_dir)
+                        safe_extract_member(zip_ref, member, parent_dir)
                         if total_count > 0:
                             percent = min((idx + 1) * 100 // total_count, 100)
                             self.root.after(0, lambda p=percent: bar.configure(value=p))

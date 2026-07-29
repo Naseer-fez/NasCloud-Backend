@@ -115,6 +115,7 @@ def build():
         "--icon", os.path.join(SCRIPT_DIR, "nascloud.ico"),
         "--add-data", f"{os.path.join(SCRIPT_DIR, 'nascloud.ico')};.",
         "--add-data", f"{os.path.join(SCRIPT_DIR, 'nascloud.png')};.",
+        "--add-data", f"{os.path.join(SCRIPT_DIR, 'assets')};assets",
     ]
 
     # Add hidden imports

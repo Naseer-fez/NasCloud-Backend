@@ -1,5 +1,5 @@
 """
-NasCloud — Server Launcher
+NasCloud - Server Launcher
 
 Reads all paths from packageconfig.json, sets up the virtual environment
 if needed, starts the Flask/Waitress server, configures and launches
@@ -14,6 +14,8 @@ import subprocess
 import urllib.request
 import shutil
 import zipfile
+import queue
+import signal
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
@@ -41,7 +43,7 @@ except ImportError:
 class ServerLauncher:
     def __init__(self, root):
         self.root = root
-        self.root.title(f"{APP_DISPLAY_NAME} — Server")
+        self.root.title(f"{APP_DISPLAY_NAME} - Server")
         self.root.geometry("600x570")
         self.root.resizable(False, False)
 
@@ -54,7 +56,13 @@ class ServerLauncher:
         self.server_process = None
         self.tunnel_process = None
         self.is_running = False
-        self.log_thread_active = False
+        self.log_thread_active = threading.Event()
+        self.stop_event = threading.Event()
+        self.log_queue = queue.Queue()
+        self.public_url = "Not connected"
+        self.state_lock = threading.Lock()
+        self.stopping = False
+        self.close_after_stop = False
 
         # Load config
         try:
@@ -76,6 +84,7 @@ class ServerLauncher:
 
         self.create_widgets()
         self.center_window()
+        self._drain_log_queue()
         
         # Start automatic background check for GitHub updates
         threading.Thread(target=self._verify_and_check_updates, args=(False,), daemon=True).start()
@@ -88,12 +97,12 @@ class ServerLauncher:
         y = (self.root.winfo_screenheight() // 2) - (h // 2)
         self.root.geometry(f'{w}x{h}+{x}+{y}')
 
-    # ── GUI Layout ─────────────────────────────────────────
+    # GUI Layout
     def create_widgets(self):
         main = ttk.Frame(self.root, padding="15")
         main.pack(fill=tk.BOTH, expand=True)
 
-        # ── Header ──
+        # Header
         header = ttk.Frame(main)
         header.pack(fill=tk.X, pady=(0, 12))
 
@@ -115,7 +124,7 @@ class ServerLauncher:
             foreground="#202124"
         ).pack(side=tk.LEFT)
 
-        # ── Status Section ──
+        # Status Section
         status_frame = ttk.LabelFrame(main, text=" Server Status ", padding="10")
         status_frame.pack(fill=tk.X, pady=(0, 10))
 
@@ -132,7 +141,7 @@ class ServerLauncher:
         row2 = ttk.Frame(status_frame)
         row2.pack(fill=tk.X, pady=2)
         ttk.Label(row2, text="Local:", font=("Segoe UI", 9)).pack(side=tk.LEFT)
-        self.local_var = tk.StringVar(value="—")
+        self.local_var = tk.StringVar(value="-")
         ttk.Label(row2, textvariable=self.local_var,
                   font=("Segoe UI", 9), foreground="#555").pack(side=tk.LEFT, padx=(8, 0))
 
@@ -143,7 +152,7 @@ class ServerLauncher:
         ttk.Label(row3, text=ws_display,
                   font=("Segoe UI", 9), foreground="#555").pack(side=tk.LEFT, padx=(8, 0))
 
-        # ── Public Access Section ──
+        # Public Access Section
         url_frame = ttk.LabelFrame(main, text=" Public Access (Cloudflare Quick Tunnel) ", padding="10")
         url_frame.pack(fill=tk.X, pady=(0, 10))
 
@@ -161,7 +170,7 @@ class ServerLauncher:
         self.copy_btn = ttk.Button(url_row, text="Copy URL", command=self.copy_url, state="disabled")
         self.copy_btn.pack(side=tk.RIGHT)
 
-        # ── Log Section ──
+        # Log Section
         log_frame = ttk.LabelFrame(main, text=" Server Log ", padding="5")
         log_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 12))
 
@@ -191,31 +200,31 @@ class ServerLauncher:
         self.log_text.tag_config("error", foreground="#d93025")
         self.log_text.tag_config("url", foreground="#1a73e8", underline=True)
 
-        # ── Button Bar ──
+        # Button Bar
         btn_frame = ttk.Frame(main)
         btn_frame.pack(fill=tk.X)
 
         self.start_btn = ttk.Button(
-            btn_frame, text="▶  Start Server",
+            btn_frame, text="Start Server",
             command=self.start_all,
             style="Accent.TButton"
         )
         self.start_btn.pack(side=tk.LEFT, padx=(0, 8))
 
         self.stop_btn = ttk.Button(
-            btn_frame, text="■  Stop Server",
+            btn_frame, text="Stop Server",
             command=self.stop_all, state="disabled"
         )
         self.stop_btn.pack(side=tk.LEFT)
 
         self.config_btn = ttk.Button(
-            btn_frame, text="⚙  Configure",
+            btn_frame, text="Configure",
             command=self.open_config_gui
         )
         self.config_btn.pack(side=tk.LEFT, padx=(8, 0))
 
         self.check_update_btn = ttk.Button(
-            btn_frame, text="🔄  Check Updates",
+            btn_frame, text="Check Updates",
             command=lambda: threading.Thread(target=self._verify_and_check_updates, args=(True,), daemon=True).start()
         )
         self.check_update_btn.pack(side=tk.LEFT, padx=(8, 0))
@@ -225,21 +234,35 @@ class ServerLauncher:
             command=self.on_close
         ).pack(side=tk.RIGHT)
 
-    # ── Logging ────────────────────────────────────────────
+    # Logging
     def log(self, message, tag="info"):
         """Thread-safe log to the GUI text widget."""
         timestamp = datetime.now().strftime("%H:%M:%S")
-        line = f"[{timestamp}] {message}\n"
+        self.log_queue.put((f"[{timestamp}] {message}\n", tag))
 
-        def _append():
+    def _drain_log_queue(self):
+        """Batch queued log records on the Tk thread to avoid flooding root.after()."""
+        if not self.root.winfo_exists():
+            return
+
+        drained = 0
+        try:
             self.log_text.config(state="normal")
-            self.log_text.insert(tk.END, line, tag)
-            self.log_text.see(tk.END)
+            while drained < 200:
+                line, tag = self.log_queue.get_nowait()
+                self.log_text.insert(tk.END, line, tag)
+                drained += 1
+            if drained:
+                self.log_text.see(tk.END)
             self.log_text.config(state="disabled")
+        except queue.Empty:
+            self.log_text.config(state="disabled")
+        except tk.TclError:
+            return
 
-        self.root.after(0, _append)
+        self.root.after(100, self._drain_log_queue)
 
-    # ── Status Updates ─────────────────────────────────────
+    # Status Updates
     def set_status(self, text, color):
         def _update():
             self.status_var.set(text)
@@ -247,10 +270,16 @@ class ServerLauncher:
         self.root.after(0, _update)
 
     def set_url(self, url):
+        with self.state_lock:
+            self.public_url = url
         def _update():
             self.url_var.set(url)
             self.copy_btn.config(state="normal")
         self.root.after(0, _update)
+
+    def get_public_url(self):
+        with self.state_lock:
+            return self.public_url
 
     def copy_url(self):
         url = self.url_var.get()
@@ -259,7 +288,7 @@ class ServerLauncher:
             self.root.clipboard_append(url)
             self.log("URL copied to clipboard!", "success")
 
-    # ── Portable Python / Virtual Environment Setup ────────
+    # Portable Python / Virtual Environment Setup
     def _ensure_venv(self):
         """Validate Python environment and return executable path."""
         # 1. Check configured python or AppData bin portable python
@@ -286,14 +315,45 @@ class ServerLauncher:
         self.log("ERROR: Python environment not found. Run Setup first.", "error")
         return None
 
-    # ── Ngrok URL Discovery ────────────────────────────────
+    def _validate_python_environment(self, python_exe, env_vars):
+        """Catch missing bundled packages before starting Waitress."""
+        try:
+            result = subprocess.run(
+                [python_exe, "-c", "import waitress, flask; print('python environment ok')"],
+                cwd=self.workspace,
+                env=env_vars,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                timeout=15,
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+            )
+        except Exception as exc:
+            self.log(f"ERROR: Python environment validation failed: {exc}", "error")
+            return False
+
+        if result.returncode != 0:
+            output = (result.stdout or "").strip()
+            self.log("ERROR: Python environment is missing required server modules.", "error")
+            if output:
+                for line in output.splitlines():
+                    self.log(f"[python-check] {line}", "error")
+            return False
+        return True
+
+    # Cloudflared URL Discovery
     def _get_cloudflared_url(self):
         """Deprecated placeholder for backward compatibility"""
         return self.url_var.get()
 
-    # ── Start Sequence ─────────────────────────────────────
+    # Start Sequence
     def start_all(self):
         """Launch the full start sequence in a background thread."""
+        if self.is_running or self.server_process or self.tunnel_process:
+            return
+        self.stop_event.clear()
+        with self.state_lock:
+            self.public_url = "Not connected"
         self.start_btn.config(state="disabled")
         self.stop_btn.config(state="normal")
         threading.Thread(target=self._start_sequence, daemon=True).start()
@@ -301,7 +361,7 @@ class ServerLauncher:
     def _start_sequence(self):
         self.log(f"Starting {APP_DISPLAY_NAME} server...", "info")
 
-        # ── Validate Config ──
+        # Validate Config
         if not self.workspace or not os.path.isdir(self.workspace):
             self.log("ERROR: Workspace directory not found.", "error")
             self.log(f"  Path: {self.workspace}", "error")
@@ -320,7 +380,7 @@ class ServerLauncher:
             self.root.after(0, lambda: self.stop_btn.config(state="disabled"))
             return
 
-        # ── Step 1: Setup Virtual Environment ──
+        # Step 1: Setup Virtual Environment
         self.set_status("Setting up environment...", "#b06000")
         venv_python = self._ensure_venv()
         if not venv_python:
@@ -329,7 +389,7 @@ class ServerLauncher:
             self.root.after(0, lambda: self.stop_btn.config(state="disabled"))
             return
 
-        # ── Step 2: Start Waitress Server ──
+        # Step 2: Start Waitress Server
         self.set_status("Starting server...", "#b06000")
         bind_host = config.get("bind_host")
         local_host = config.get("local_host")
@@ -341,11 +401,21 @@ class ServerLauncher:
         # Copy current environment and explicitly inject configured api_key as 'accesstooken'
         env_vars = os.environ.copy()
         env_vars["PYTHONUNBUFFERED"] = "1"
+        env_vars["PYTHONNOUSERSITE"] = "1"
         api_key = config.get("api_key", "")
         if api_key:
             env_vars["accesstooken"] = api_key
 
+        if not self._validate_python_environment(venv_python, env_vars):
+            self.set_status("Setup Failed", "#d93025")
+            self.root.after(0, lambda: self.start_btn.config(state="normal"))
+            self.root.after(0, lambda: self.stop_btn.config(state="disabled"))
+            return
+
         try:
+            flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+            if os.name == 'nt':
+                flags |= subprocess.CREATE_NEW_PROCESS_GROUP
             self.server_process = subprocess.Popen(
                 [venv_python, "-m", "waitress",
                  f"--host={self.host}",
@@ -358,21 +428,27 @@ class ServerLauncher:
                 stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1,
-                creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+                creationflags=flags,
+                start_new_session=(os.name != 'nt')
             )
         except FileNotFoundError:
-            self.log("ERROR: Could not start server — venv python not found.", "error")
+            self.log("ERROR: Could not start server - venv python not found.", "error")
             self.set_status("Start Failed", "#d93025")
             self.root.after(0, lambda: self.start_btn.config(state="normal"))
             self.root.after(0, lambda: self.stop_btn.config(state="disabled"))
             return
 
         # Start log streaming thread immediately to keep pipe empty
-        self.log_thread_active = True
+        self.log_thread_active.set()
         threading.Thread(target=self._stream_server_logs, daemon=True).start()
 
         # Give the server a moment to start (or fail)
-        time.sleep(3)
+        for _ in range(30):
+            if self.stop_event.is_set():
+                return
+            if self.server_process.poll() is not None:
+                break
+            time.sleep(0.1)
         if self.server_process.poll() is not None:
             self.log(f"ERROR: Server exited immediately.", "error")
             self.set_status("Server Crashed", "#d93025")
@@ -384,7 +460,7 @@ class ServerLauncher:
         self.log("Server started successfully!", "success")
         self.is_running = True
 
-        # ── Step 3: Ensure Cloudflared Binary exists ──
+        # Step 3: Ensure Cloudflared Binary exists
         self.set_status("Checking cloudflared...", "#b06000")
         if not os.path.exists(self.cloudflared_path) or os.path.getsize(self.cloudflared_path) < 1000000:
             try:
@@ -402,17 +478,17 @@ class ServerLauncher:
                     self.log(f"Found cloudflared fallback in system PATH: {self.cloudflared_path}", "success")
                 else:
                     self.log(f"ERROR: cloudflared.exe not found or invalid: {ex}", "error")
-                    self.set_status("● Running (Local Only)", "#1e8e3e")
-                    self.log("─" * 45, "info")
+                    self.set_status("Running (Local Only)", "#1e8e3e")
+                    self.log("-" * 45, "info")
                     self.log(f"{APP_DISPLAY_NAME} is ready (Local Only)!", "success")
                     self.log(f"  Local:  {local_url}", "info")
-                    self.log("─" * 45, "info")
+                    self.log("-" * 45, "info")
                     self.notify_central_server(local_url)
                     return
 
-        # ── Step 4: Start Cloudflared Tunnel ──
+        # Step 4: Start Cloudflared Tunnel
         self.set_status("Connecting cloudflared...", "#b06000")
-        self.log(f"Starting cloudflared tunnel → port {self.port}...", "info")
+        self.log(f"Starting cloudflared tunnel to port {self.port}...", "info")
         try:
             self.tunnel_process = subprocess.Popen(
                 [self.cloudflared_path, "tunnel", "--url", f"http://127.0.0.1:{self.port}"],
@@ -420,10 +496,11 @@ class ServerLauncher:
                 stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1,
-                creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+                creationflags=flags,
+                start_new_session=(os.name != 'nt')
             )
             # Start background thread to stream tunnel logs and extract the URL
-            self.log_thread_active = True
+            self.log_thread_active.set()
             threading.Thread(target=self._stream_tunnel_logs, daemon=True).start()
         except Exception as e:
             self.log(f"ERROR: Failed to start cloudflared tunnel: {e}", "error")
@@ -432,30 +509,32 @@ class ServerLauncher:
         # Wait up to 15 seconds for the cloudflared URL to be captured
         self.log("Waiting for cloudflared tunnel to establish...", "info")
         for _ in range(15):
-            if self.url_var.get() != "Not connected":
+            if self.stop_event.is_set():
+                return
+            if self.get_public_url() != "Not connected":
                 break
             time.sleep(1)
 
-        # ── Done ──
-        self.set_status("● Running", "#1e8e3e")
-        self.log("─" * 45, "info")
+        # Done
+        self.set_status("Running", "#1e8e3e")
+        self.log("-" * 45, "info")
         self.log(f"{APP_DISPLAY_NAME} is ready!", "success")
         self.log(f"  Local:  {local_url}", "info")
-        if self.url_var.get() != "Not connected":
-            self.log(f"  Public: {self.url_var.get()}", "info")
-        self.log("─" * 45, "info")
+        if self.get_public_url() != "Not connected":
+            self.log(f"  Public: {self.get_public_url()}", "info")
+        self.log("-" * 45, "info")
 
-        # ── Notify Central Server ──
-        final_url = self.url_var.get()
+        # Notify Central Server
+        final_url = self.get_public_url()
         if final_url == "Not connected":
             final_url = local_url
         self.notify_central_server(final_url)
 
-    # ── Log Streaming ──────────────────────────────────────
+    # Log Streaming
     def _stream_server_logs(self):
         """Read server stdout line-by-line and display in log."""
         try:
-            while self.log_thread_active and self.server_process:
+            while self.log_thread_active.is_set() and self.server_process:
                 line = self.server_process.stdout.readline()
                 if not line:
                     if self.server_process.poll() is not None:
@@ -472,7 +551,7 @@ class ServerLauncher:
         import re
         url_pattern = re.compile(r'https://[a-zA-Z0-9-]+\.trycloudflare\.com')
         try:
-            while self.log_thread_active and self.tunnel_process:
+            while self.log_thread_active.is_set() and self.tunnel_process:
                 line = self.tunnel_process.stdout.readline()
                 if not line:
                     if self.tunnel_process.poll() is not None:
@@ -484,7 +563,7 @@ class ServerLauncher:
                     match = url_pattern.search(stripped)
                     if match:
                         url = match.group(0)
-                        if self.url_var.get() == "Not connected":
+                        if self.get_public_url() == "Not connected":
                             self.set_url(url)
                             self.log(f"Public Tunnel URL discovered: {url}", "success")
                             os.environ["TUNNEL_URL"] = url
@@ -495,40 +574,75 @@ class ServerLauncher:
         except Exception as e:
             self.log(f"Error reading cloudflared logs: {e}", "warning")
 
-    # ── Stop Sequence ──────────────────────────────────────
+    # Stop Sequence
     def stop_all(self):
         """Stop server and cloudflared processes."""
+        if self.stopping:
+            return
+        self.stopping = True
+        self.stop_btn.config(state="disabled")
         self.log("Stopping server...", "warning")
-        self.log_thread_active = False
+        threading.Thread(target=self._stop_all_worker, daemon=True).start()
+        return
+
+    def _terminate_process_tree(self, proc, name):
+        if not proc or proc.poll() is not None:
+            return
+        try:
+            if os.name == 'nt':
+                subprocess.run(
+                    ["taskkill", "/PID", str(proc.pid), "/T", "/F"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=8,
+                    creationflags=subprocess.CREATE_NO_WINDOW
+                )
+            else:
+                try:
+                    os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+                except ProcessLookupError:
+                    return
+                try:
+                    proc.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            proc.wait(timeout=3)
+            self.log(f"{name} stopped.", "info")
+        except Exception as exc:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+            self.log(f"{name} forced to stop: {exc}", "warning")
+
+    def _stop_all_worker(self):
+        self.stop_event.set()
+        self.log_thread_active.clear()
         self.is_running = False
 
         if self.tunnel_process:
-            try:
-                self.tunnel_process.terminate()
-                self.tunnel_process.wait(timeout=5)
-                self.log("Cloudflared tunnel closed.", "info")
-            except Exception:
-                try:
-                    self.tunnel_process.kill()
-                except Exception:
-                    pass
+            self._terminate_process_tree(self.tunnel_process, "Cloudflared tunnel")
             self.tunnel_process = None
 
         if self.server_process:
-            try:
-                self.server_process.terminate()
-                self.server_process.wait(timeout=5)
-                self.log("Server stopped.", "info")
-            except Exception:
-                self.server_process.kill()
+            self._terminate_process_tree(self.server_process, "Server")
             self.server_process = None
 
-        self.set_status("Stopped", "#5f6368")
-        self.url_var.set("Not connected")
-        self.local_var.set("—")
-        self.copy_btn.config(state="disabled")
-        self.start_btn.config(state="normal")
-        self.stop_btn.config(state="disabled")
+        with self.state_lock:
+            self.public_url = "Not connected"
+
+        def finish_stop():
+            self.set_status("Stopped", "#5f6368")
+            self.url_var.set("Not connected")
+            self.local_var.set("-")
+            self.copy_btn.config(state="disabled")
+            self.start_btn.config(state="normal")
+            self.stop_btn.config(state="disabled")
+            self.stopping = False
+            if self.close_after_stop:
+                self.root.destroy()
+
+        self.root.after(0, finish_stop)
         self.log("All processes terminated.", "success")
 
     def notify_central_server(self, server_url):
@@ -615,7 +729,7 @@ class ServerLauncher:
             
         ServerConfigApp(config_win, on_complete=on_complete, on_cancel=config_win.destroy)
 
-    # ── GitHub Version Verification & Update ─────────────────
+    # GitHub Version Verification & Update
     def _verify_and_check_updates(self, manual=False):
         """Check current program hash against latest GitHub commit SHA."""
         if manual:
@@ -761,7 +875,7 @@ class ServerLauncher:
 
                 if os.path.isdir(src_path):
                     if item_lower in protected_folders and os.path.exists(dst_path):
-                        # Protected directory already exists in workspace — keep existing
+                        # Protected directory already exists in workspace - keep existing
                         continue
                     if os.path.exists(dst_path):
                         shutil.rmtree(dst_path, ignore_errors=True)
@@ -769,7 +883,7 @@ class ServerLauncher:
                 elif os.path.isfile(src_path):
                     if item_lower in protected_files or item_lower.endswith(".db") or item_lower.endswith(".sqlite") or item_lower.endswith(".sqlite3"):
                         if os.path.exists(dst_path):
-                            # Protected local file already exists — do not overwrite
+                            # Protected local file already exists - do not overwrite
                             continue
                     shutil.copy2(src_path, dst_path)
 
@@ -798,7 +912,7 @@ class ServerLauncher:
             except Exception:
                 pass
 
-    # ── Window Close ───────────────────────────────────────
+    # Window Close
     def on_close(self):
         if self.is_running:
             confirm = messagebox.askyesno(
@@ -809,7 +923,9 @@ class ServerLauncher:
             )
             if not confirm:
                 return
+            self.close_after_stop = True
             self.stop_all()
+            return
         self.root.destroy()
 
 
