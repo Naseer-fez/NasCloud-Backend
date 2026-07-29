@@ -34,7 +34,9 @@ cd NasCloud-Backend
 pip install -r requirements.txt
 cp sample.env .env
 # Edit .env with your secrets
-python app.py
+python app.py --link 0
+# Link 1 for connecting to the main server which is default
+# Link 0 if you want to control the backend youself
 ```
 
 The server starts on `http://0.0.0.0:5002`.
