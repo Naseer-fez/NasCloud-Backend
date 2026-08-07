@@ -16,9 +16,30 @@ DIR = config.get("workspace_path") or config.get("dir") or os.getcwd()
 VENV_DIR = "env"
 
 
+def _python_has_packages(py_path):
+    if not py_path or not os.path.exists(py_path):
+        return False
+    try:
+        res = CMD.run(
+            [py_path, "-c", "import waitress, flask; print('ok')"],
+            stdout=CMD.PIPE, stderr=CMD.PIPE, text=True, timeout=10,
+            creationflags=CMD.CREATE_NO_WINDOW if os.name == 'nt' else 0
+        )
+        return res.returncode == 0
+    except Exception:
+        return False
+
+
 def pipcreation():
     try:
         _, path = PYTHON()
+        if not path or not os.path.exists(path):
+            return False, None
+
+        # If Python already has required packages pre-installed, skip venv creation
+        if _python_has_packages(path):
+            config.set("venv_python", path)
+            return True, path
 
         CMD.run(
             [path, "-m", "venv", VENV_DIR],
@@ -55,8 +76,13 @@ def pipcreation():
 def PIP():
     venv_python = config.get("venv_python")
 
-    if venv_python and Path(venv_python).exists():
+    if venv_python and Path(venv_python).exists() and _python_has_packages(venv_python):
         return venv_python
+
+    _, py_path = PYTHON()
+    if py_path and _python_has_packages(py_path):
+        config.set("venv_python", py_path)
+        return py_path
 
     success, venv_python = pipcreation()
 
