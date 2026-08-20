@@ -58,7 +58,7 @@ def fix_pth_file(bin_dir):
                 for line in lines:
                     if line in ("#import site", "# import site"):
                         new_lines.append("import site")
-                    else:
+                    elif line:
                         new_lines.append(line)
                 for required in ("Lib", "Lib/site-packages", "."):
                     if required not in new_lines:
@@ -195,7 +195,7 @@ def extractpython(reporthook=None):
     zip_path = get_asset_path("python_env.zip")
     
     if not os.path.exists(zip_path):
-        raise FileNotFoundError(f"Bundled Python archive not found at: {zip_path}")
+        raise FileNotFoundError(f"Bundled Python archive not found at: {zip_path}. Ensure assets/python_env.zip was packaged during build.")
         
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         members = zip_ref.infolist()
@@ -206,27 +206,7 @@ def extractpython(reporthook=None):
                 reporthook(idx + 1, 1, total_count)
 
     # Ensure import site and site-packages are enabled in ._pth configuration
-    try:
-        for f in os.listdir(bin_dir):
-            if f.endswith("._pth"):
-                pth_path = os.path.join(bin_dir, f)
-                with open(pth_path, "r", encoding="utf-8") as pf:
-                    content = pf.read()
-                new_lines = []
-                for line in content.splitlines():
-                    if line.strip() in ("#import site", "# import site"):
-                        new_lines.append("import site")
-                    else:
-                        new_lines.append(line)
-                for required in ("Lib", "Lib/site-packages", "."):
-                    if required not in new_lines:
-                        new_lines.insert(0, required)
-                if "import site" not in new_lines:
-                    new_lines.append("import site")
-                with open(pth_path, "w", encoding="utf-8") as pf:
-                    pf.write("\n".join(new_lines) + "\n")
-    except Exception:
-        pass
+    fix_pth_file(bin_dir)
                 
     # Copy C-runtime DLLs if present in _MEIPASS or System32 for clean Windows systems
     for dll_name in ("vcruntime140.dll", "msvcp140.dll", "vcruntime140_1.dll"):
@@ -245,6 +225,20 @@ def extractpython(reporthook=None):
                     pass
 
     python_exe = os.path.join(bin_dir, "python.exe")
+    if not os.path.exists(python_exe):
+        raise RuntimeError(f"Extraction failed: python.exe not found at {python_exe}")
+
+    site_packages = os.path.join(bin_dir, "Lib", "site-packages")
+    if not os.path.exists(site_packages):
+        raise RuntimeError(f"Extraction failed: Lib/site-packages directory not found in {bin_dir}")
+
+    # Validate flask package presence in site-packages
+    has_flask = os.path.exists(os.path.join(site_packages, "flask")) or any(
+        p.lower().startswith("flask") for p in os.listdir(site_packages)
+    )
+    if not has_flask:
+        raise RuntimeError("Extracted Python environment is missing required 'flask' package in site-packages.")
+
     return python_exe
 
 def extractcloudflared(reporthook=None):

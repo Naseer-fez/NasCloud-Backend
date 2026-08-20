@@ -8,18 +8,51 @@ Bundled as a single self-contained application (NasCloud.exe).
 import sys
 import os
 import multiprocessing
+import traceback
 import tkinter as tk
+from tkinter import messagebox
 
-class DummyStream:
+# Setup logging for frozen windowed mode
+_APPDATA_DIR = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA") or os.path.expanduser("~")
+_LOG_DIR = os.path.join(_APPDATA_DIR, "NasCloud")
+try:
+    os.makedirs(_LOG_DIR, exist_ok=True)
+except Exception:
+    pass
+_ERROR_LOG_PATH = os.path.join(_LOG_DIR, "error.log")
+
+class FileLogger:
+    def __init__(self, filepath, fallback_stream=None):
+        self.filepath = filepath
+        self.fallback_stream = fallback_stream
+
     def write(self, text):
-        pass
-    def flush(self):
-        pass
+        if self.fallback_stream:
+            try:
+                self.fallback_stream.write(text)
+            except Exception:
+                pass
+        try:
+            with open(self.filepath, "a", encoding="utf-8") as f:
+                f.write(text)
+        except Exception:
+            pass
 
-if sys.stdout is None:
-    sys.stdout = DummyStream()
-if sys.stderr is None:
-    sys.stderr = DummyStream()
+    def flush(self):
+        if self.fallback_stream:
+            try:
+                self.fallback_stream.flush()
+            except Exception:
+                pass
+
+if getattr(sys, 'frozen', False):
+    sys.stdout = FileLogger(_ERROR_LOG_PATH, sys.stdout)
+    sys.stderr = FileLogger(_ERROR_LOG_PATH, sys.stderr)
+else:
+    if sys.stdout is None:
+        sys.stdout = FileLogger(_ERROR_LOG_PATH)
+    if sys.stderr is None:
+        sys.stderr = FileLogger(_ERROR_LOG_PATH)
 
 try:
     from pckconfig import config, APP_DISPLAY_NAME, APP_VERSION, GITHUB_OWNER, GITHUB_REPO, GITHUB_BRANCH
@@ -195,4 +228,25 @@ def main():
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
-    main()
+    try:
+        main()
+    except Exception as e:
+        err_msg = traceback.format_exc()
+        _safe_print(f"FATAL ERROR: {err_msg}")
+        try:
+            with open(_ERROR_LOG_PATH, "a", encoding="utf-8") as f:
+                f.write(f"\n[FATAL UNCAUGHT EXCEPTION]\n{err_msg}\n")
+        except Exception:
+            pass
+        try:
+            err_root = tk.Tk()
+            err_root.withdraw()
+            messagebox.showerror(
+                f"{APP_DISPLAY_NAME} - Critical Error",
+                f"An unhandled error occurred:\n\n{e}\n\nDetailed traceback logged to:\n{_ERROR_LOG_PATH}",
+                parent=err_root
+            )
+            err_root.destroy()
+        except Exception:
+            pass
+        sys.exit(1)

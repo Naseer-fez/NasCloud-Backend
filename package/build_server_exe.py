@@ -47,6 +47,41 @@ def install_pyinstaller():
     return True
 
 
+def check_assets():
+    """Verify assets directory and required bundled binaries/archives exist."""
+    assets_dir = os.path.join(SCRIPT_DIR, "assets")
+    if not os.path.exists(assets_dir):
+        print(f"\n  ERROR: Assets directory not found at {assets_dir}")
+        print("  Please create it and run 'python build_python_env.py' first.")
+        return False
+
+    required_assets = [
+        ("python_env.zip", 1024 * 1024),          # At least 1MB
+        ("cloudflared.exe", 1024 * 1024),         # At least 1MB
+        ("backend_source.zip", 10 * 1024),        # At least 10KB
+    ]
+
+    missing = []
+    for asset_name, min_size in required_assets:
+        asset_path = os.path.join(assets_dir, asset_name)
+        if not os.path.exists(asset_path):
+            missing.append(f"Missing '{asset_name}' in {assets_dir}")
+        elif os.path.getsize(asset_path) < min_size:
+            missing.append(f"Invalid/incomplete '{asset_name}' in {assets_dir} (size: {os.path.getsize(asset_path)} bytes)")
+
+    if missing:
+        print("\n  ERROR: Asset verification failed:")
+        for m in missing:
+            print(f"    - {m}")
+        print("\n  To build the required portable Python and backend archives, run:")
+        print("    python build_python_env.py")
+        print("  And ensure cloudflared.exe is placed in package/assets/.")
+        return False
+
+    print("  All required assets verified (python_env.zip, cloudflared.exe, backend_source.zip).")
+    return True
+
+
 def build():
     """Run the PyInstaller build for the server launcher."""
     print(f"\n{'='*50}")
@@ -54,14 +89,19 @@ def build():
     print(f"{'='*50}\n")
 
     # Step 1: Check PyInstaller
-    print("[1/3] Checking for PyInstaller...")
+    print("[1/4] Checking for PyInstaller...")
     if not check_pyinstaller():
         print("  PyInstaller not found.")
         if not install_pyinstaller():
             sys.exit(1)
 
-    # Step 2: Clean previous build artifacts (specifically the ones for this exe, or build/dist dir contents)
-    print("[2/3] Cleaning previous server build artifacts...")
+    # Step 2: Pre-flight check for assets
+    print("[2/4] Verifying bundled assets...")
+    if not check_assets():
+        sys.exit(1)
+
+    # Step 3: Clean previous build artifacts (specifically the ones for this exe, or build/dist dir contents)
+    print("[3/4] Cleaning previous server build artifacts...")
     
     # Delete spec file if exists
     if os.path.exists(SPEC_FILE):
@@ -90,8 +130,8 @@ def build():
         except Exception as e:
             print(f"  Warning: Could not remove {target_dist_exe}: {e}")
 
-    # Step 3: Run PyInstaller
-    print("[3/3] Running PyInstaller...")
+    # Step 4: Run PyInstaller
+    print("[4/4] Running PyInstaller...")
 
     hidden_imports = [
         "pckconfig",

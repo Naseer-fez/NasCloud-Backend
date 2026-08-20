@@ -44,7 +44,7 @@ class ServerLauncher:
     def __init__(self, root):
         self.root = root
         self.root.title(f"{APP_DISPLAY_NAME} - Server")
-        self.root.geometry("600x570")
+        self.root.geometry("640x580")
         self.root.resizable(False, False)
 
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -209,7 +209,7 @@ class ServerLauncher:
             command=self.start_all,
             style="Accent.TButton"
         )
-        self.start_btn.pack(side=tk.LEFT, padx=(0, 8))
+        self.start_btn.pack(side=tk.LEFT, padx=(0, 6))
 
         self.stop_btn = ttk.Button(
             btn_frame, text="Stop Server",
@@ -221,13 +221,19 @@ class ServerLauncher:
             btn_frame, text="Configure",
             command=self.open_config_gui
         )
-        self.config_btn.pack(side=tk.LEFT, padx=(8, 0))
+        self.config_btn.pack(side=tk.LEFT, padx=(6, 0))
+
+        self.reextract_btn = ttk.Button(
+            btn_frame, text="Re-extract Python",
+            command=self.reextract_python
+        )
+        self.reextract_btn.pack(side=tk.LEFT, padx=(6, 0))
 
         self.check_update_btn = ttk.Button(
             btn_frame, text="Check Updates",
             command=lambda: threading.Thread(target=self._verify_and_check_updates, args=(True,), daemon=True).start()
         )
-        self.check_update_btn.pack(side=tk.LEFT, padx=(8, 0))
+        self.check_update_btn.pack(side=tk.LEFT, padx=(6, 0))
 
         ttk.Button(
             btn_frame, text="Exit",
@@ -306,20 +312,94 @@ class ServerLauncher:
             self.log(f"Using portable Python environment: {local_py}", "success")
             return local_py
 
+        # Extract python environment if missing (e.g. if config exists but binaries don't)
+        self.log("Portable Python environment not found. Extracting bundled environment...", "info")
+        self.set_status("Extracting Python...", "#b06000")
+        try:
+            try:
+                from installdepen import extractpython
+            except ImportError:
+                from package.installdepen import extractpython
+            extracted_py = extractpython()
+            self.python_path = extracted_py
+            try:
+                config.set("python", extracted_py)
+            except Exception:
+                pass
+            self.log(f"Extracted portable Python environment: {extracted_py}", "success")
+            return extracted_py
+        except Exception as ex:
+            self.log(f"Failed to extract Python environment: {ex}", "warning")
+
         # 2. Legacy workspace virtual environment check
         venv_python = os.path.join(self.workspace, "env", "Scripts", "python.exe")
         if os.path.exists(venv_python):
             self.log("Virtual environment found.", "success")
             return venv_python
 
-        self.log("ERROR: Python environment not found. Run Setup first.", "error")
+        self.log("ERROR: Python environment not found. Run Setup or click 'Re-extract Python'.", "error")
         return None
 
+    def reextract_python(self):
+        """Manually re-extract bundled portable Python environment into %LOCALAPPDATA%/NasCloud/bin/."""
+        if self.is_running:
+            messagebox.showwarning("Server Running", "Please stop the server before re-extracting Python.", parent=self.root)
+            return
+
+        confirm = messagebox.askyesno(
+            "Re-extract Python",
+            "This will re-extract the bundled portable Python environment into your local AppData directory to fix any missing packages or broken configuration.\n\nContinue?",
+            parent=self.root
+        )
+        if not confirm:
+            return
+
+        def task():
+            self.log("Re-extracting bundled portable Python environment...", "warning")
+            self.set_status("Re-extracting Python...", "#b06000")
+            try:
+                try:
+                    from installdepen import extractpython
+                except ImportError:
+                    from package.installdepen import extractpython
+                extracted_py = extractpython()
+                self.python_path = extracted_py
+                try:
+                    config.set("python", extracted_py)
+                except Exception:
+                    pass
+                self.log(f"Successfully re-extracted portable Python: {extracted_py}", "success")
+                self.set_status("Python Ready", "#1e8e3e")
+                self.root.after(0, lambda: messagebox.showinfo(
+                    "Success",
+                    f"Portable Python environment was successfully re-extracted to:\n{extracted_py}",
+                    parent=self.root
+                ))
+            except Exception as ex:
+                self.log(f"Failed to re-extract Python: {ex}", "error")
+                self.set_status("Extraction Failed", "#d93025")
+                self.root.after(0, lambda: messagebox.showerror(
+                    "Extraction Failed",
+                    f"Failed to re-extract Python environment:\n{ex}",
+                    parent=self.root
+                ))
+
+        threading.Thread(target=task, daemon=True).start()
+
     def _validate_python_environment(self, python_exe, env_vars):
-        """Catch missing bundled packages before starting Waitress."""
+        """Catch missing bundled packages before starting Waitress and log exact tracebacks."""
+        check_script = (
+            "import sys, traceback\n"
+            "try:\n"
+            "    import waitress, flask, flask_cors, flask_jwt_extended, flask_sqlalchemy, sqlalchemy, dotenv, rapidfuzz, apirlpy\n"
+            "    print('SUCCESS: python environment ok')\n"
+            "except Exception as exc:\n"
+            "    traceback.print_exc()\n"
+            "    sys.exit(1)\n"
+        )
         try:
             result = subprocess.run(
-                [python_exe, "-c", "import waitress, flask; print('python environment ok')"],
+                [python_exe, "-c", check_script],
                 cwd=self.workspace,
                 env=env_vars,
                 stdout=subprocess.PIPE,
@@ -329,7 +409,7 @@ class ServerLauncher:
                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
             )
         except Exception as exc:
-            self.log(f"ERROR: Python environment validation failed: {exc}", "error")
+            self.log(f"ERROR: Python environment validation failed to execute: {exc}", "error")
             return False
 
         if result.returncode != 0:
@@ -338,6 +418,7 @@ class ServerLauncher:
             if output:
                 for line in output.splitlines():
                     self.log(f"[python-check] {line}", "error")
+            self.log("Tip: Click 'Re-extract Python' to reinstall the bundled portable Python environment.", "warning")
             return False
         return True
 
