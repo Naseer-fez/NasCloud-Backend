@@ -7,6 +7,7 @@ gunicorn
 stream-zip
 waitress
 requests
+psycopg[binary]
 psycopg2-binary
 apirlpy
 rapidfuzz
